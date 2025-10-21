@@ -109,7 +109,7 @@ router.post('/forget-password', async (req, res) => {
   if (user.status == 'deleted') return res.status(400).send({ message: 'User has been deleted. Contact admin for further support.' });
 
   const token = generateResetPasswordToken(user._id);
-  const link = `https://titaniumhub.net/api/password/forgot/${user?._id}/${token}?redirect=https://titanium-blue.vercel.app`
+  const link = `https://api.titanium.com/api/password/forgot/${user?._id}/${token}?redirect=https://qqa.titanium.com`
   await sendGridEmail({
     email: email,
     sendCode: false,
@@ -152,7 +152,7 @@ router.put('/reset-password/:userId/:token', passwordauth, async (req, res) => {
     data: {
       fname: user.fname || '',
       lname: user.lname || '',
-      siteLink: 'https://titanium-blue.vercel.app',
+      siteLink: 'https://qqa.titanium.com',
       websiteName: 'Titanium Industries',
     }
   })

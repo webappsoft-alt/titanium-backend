@@ -210,7 +210,7 @@ const generateEmailTemplate = (templateType, data) => {
                     <strong>State:</strong> ${data?.state || ''}</p>
                 <br>
                 <br>
-                <a href="https://titanium-blue.vercel.app/dashboard/customer/edit/${data?._id}">Link to User</a>
+                <a href="https://qqa.titanium.com/dashboard/customer/edit/${data?._id}">Link to User</a>
                </div>
                 </body>
                 </html>`;
@@ -269,7 +269,7 @@ const generateEmailTemplate = (templateType, data) => {
                     <p>Your quote is ready.</p>
                     <p>Please see the attached pdf for further details.</p>
                     <p>We look forward to working with you and appreciate your business!</p>
-                    <p><a href="https://titanium-blue.vercel.app/">Click here to visit our site.</a></p>
+                    <p><a href="https://qqa.titanium.com/">Click here to visit our site.</a></p>
                        ${footer()}
                     </div>
                 </body>
