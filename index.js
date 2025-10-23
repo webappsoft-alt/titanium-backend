@@ -45,7 +45,7 @@ require('./startup/db')();
 require('./startup/validation')();
 
 const port = process.env.PORT || 5004;
-server.listen(port, () => logger.info(`Listening on port  ${port}...`));
+server.listen(port,'0.0.0.0', () => logger.info(`Listening on port  ${port}...`));
 
 
 module.exports = server;
