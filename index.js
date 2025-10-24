@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { requestLogger } = require('./startup/requestLogger');
+const mongoose = require('mongoose');
 
 const express = require('express');
 const cors = require('cors');
@@ -44,8 +45,7 @@ require('./startup/routes')(app);
 require('./startup/db')();
 require('./startup/validation')();
 
-const port = process.env.PORT || 5004;
-server.listen(port,'0.0.0.0', () => logger.info(`Listening on port  ${port}...`));
-
+const port = process.env.PORT || 5022;
+server.listen(port, '0.0.0.0', () => logger.info(`Listening on port  ${port}...`));
 
 module.exports = server;
