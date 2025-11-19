@@ -449,8 +449,8 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
 
             billingAddress: billingAddress?._id || null,
             shippingAddress: shippingAddress?._id || null,
-            address: old_ship_address_id?.address1 || old_bill_address_id?.address1 || '',
-            zipCode: old_ship_address_id?.zipCode || old_bill_address_id?.zipCode || '',
+            address: shippingAddress?.address1 || billingAddress?.address1 || '',
+            zipCode: shippingAddress?.zipCode || billingAddress?.zipCode || '',
 
             regionalManager: regionalManager?._id || null,
             accountManager: accountManager?._id || null,
