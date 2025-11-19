@@ -13,6 +13,7 @@ const { TempUser } = require('../models/TempUser');
 const { handleGetUser } = require('../controllers/quotationController');
 const CompetitorMarkup = require("../models/competitor-value");
 const MailSettings = require('../models/mailSetting');
+const CompetitorDomain = require('../models/competitorDomain');  // Your Mongoose schema file
 
 const Countries = require('../models/countries');
 const States = require('../models/states');
@@ -80,7 +81,7 @@ router.get('/titanium/roles', [auth, admin], async (req, res) => {
   try {
     const users = await User.find(
       { status: 'active', type: 'sub-admin', }
-    ).select('email _id roles').lean();
+    ).select('email _id roles branch fname lname').lean();
     // Categorizing users based on their roles
     const categorizedUsers = {
       accountManager: users,
@@ -359,7 +360,6 @@ router.post('/signup/customer', async (req, res) => {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
-
 router.post('/import/customer', [auth, admin], async (req, res) => {
   const { customerData } = req.body;
 
@@ -374,6 +374,14 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
     filter ? await model.findOne(filter).select(projection).lean() : null;
 
   try {
+
+    // 🔥 Get all competitor domains
+    const competitorDomains = await CompetitorDomain.find({ status: 'active' })
+      .select('domain -_id')
+      .lean();
+
+    const domainList = competitorDomains.map(d => d.domain.toLowerCase().trim());
+
     const bulkOperations = await Promise.all(
       customerData.map(async (customer) => {
         try {
@@ -386,7 +394,32 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
             old_ship_address_id, old_bill_address_id
           } = customer;
 
-          const [country, state, branch, accountManager, regionalManager, salesRep, billingAddress, shippingAddress] = await Promise.all([
+          // ------------------------------
+          // 🔥 COMPETITOR DOMAIN CHECK
+          // ------------------------------
+
+          if (!isCompetitor && email) {
+            const emailLower = email.toLowerCase();
+
+            const isCompetitorEmail = domainList.some(domain =>
+              emailLower.endsWith(domain)
+            );
+
+            if (isCompetitorEmail) {
+              return null; // ❌ Skip this record
+            }
+          }
+
+          const [
+            country,
+            state,
+            branch,
+            accountManager,
+            regionalManager,
+            salesRep,
+            billingAddress,
+            shippingAddress
+          ] = await Promise.all([
             country_id ? getReference(Countries, { old_id: country_id }, '_id name') : null,
             state_id ? getReference(States, { old_id: state_id }, '_id name') : null,
             branch_id ? getReference(Territories, { old_id: branch_id }, '_id') : null,
@@ -410,24 +443,27 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
             email,
             company,
             stratixAccount,
-            assignBranch: branch_id ? branch?._id : null,
-            salesRep: salesRep_id ? salesRep?._id : null,
 
-            billingAddress: old_bill_address_id ? billingAddress?._id : null,
-            shippingAddress: old_ship_address_id ? shippingAddress?._id : null,
+            assignBranch: branch?._id || null,
+            salesRep: salesRep?._id || null,
 
-            regionalManager: regionalManager_id ? regionalManager?._id : null,
-            accountManager: accountManager_id ? accountManager?._id : null,
+            billingAddress: billingAddress?._id || null,
+            shippingAddress: shippingAddress?._id || null,
 
-            countryID: country_id ? country?._id : null,
-            country: country_id ? country?.name : '',
-            stateID: state_id ? state?._id : null,
-            state: state_id ? state?.name : '',
+            regionalManager: regionalManager?._id || null,
+            accountManager: accountManager?._id || null,
+
+            countryID: country?._id || null,
+            country: country?.name || '',
+            stateID: state?._id || null,
+            state: state?.name || '',
+
             old_country_id: country_id,
             old_state_id: state_id,
+
             isVerify: true,
             status: 'active',
-            type: 'customer',
+            type: 'customer'
           };
 
           return {
@@ -439,12 +475,12 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
           };
         } catch (error) {
           console.error(`Error preparing bulk op for ${customer.email || 'unknown'}`, error);
-          return null; // skip invalid customers
+          return null;
         }
       })
     );
 
-    const validOperations = bulkOperations.filter(Boolean); // remove null entries
+    const validOperations = bulkOperations.filter(Boolean);
 
     if (validOperations.length === 0) {
       return res.status(400).json({
@@ -462,6 +498,7 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
       modifiedCount: bulkResult.modifiedCount,
       upsertedCount: bulkResult.upsertedCount,
     });
+
   } catch (error) {
     console.error('Bulk import error:', error);
     return res.status(500).json({
@@ -471,7 +508,6 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
     });
   }
 });
-
 
 // Importing/Updating Titanium Customers
 router.post('/import/titanium', [auth, admin], async (req, res) => {
@@ -738,9 +774,9 @@ router.get('/customer/:id/:status/:search?', [auth, admin], async (req, res) => 
       users = await User.find(query).sort({ _id: -1 })
         .select('-password')
         .populate('assignBranch', 'code')
-        .populate('accountManager', 'email')
-        .populate('salesRep', 'email')
-        .populate('regionalManager', 'email')
+        .populate('accountManager', 'email fname lname')
+        .populate('salesRep', 'email fname lname')
+        .populate('regionalManager', 'email fname lname')
         .lean();
     } else if (type == 'sub-admin') {
       users = await User.find(query).sort({ _id: -1 })
