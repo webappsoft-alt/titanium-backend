@@ -79,14 +79,19 @@ router.get('/byId/:id', [auth, admin], async (req, res) => {
 router.get('/titanium/roles', [auth, admin], async (req, res) => {
   try {
     const users = await User.find(
-      { status: 'active', type: 'sub-admin', roles: { $in: ['OS', 'IS', 'RM'] } }
+      { status: 'active', type: 'sub-admin', }
     ).select('email _id roles').lean();
     // Categorizing users based on their roles
     const categorizedUsers = {
-      accountManager: users.filter(user => user.roles.includes('OS')),
-      salesRep: users.filter(user => user.roles.includes('IS')),
-      regionalManager: users.filter(user => user.roles.includes('RM'))
+      accountManager: users,
+      salesRep: users,
+      regionalManager: users
     };
+    // const categorizedUsers = {
+    //   accountManager: users.filter(user => user.roles.includes('OS')),
+    //   salesRep: users.filter(user => user.roles.includes('IS')),
+    //   regionalManager: users.filter(user => user.roles.includes('RM'))
+    // };
 
     res.status(200).json({ data: categorizedUsers, success: true });
   } catch (error) {
