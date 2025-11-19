@@ -426,8 +426,8 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
             accountManager_id ? getReference(User, { type: 'sub-admin', rails_id: accountManager_id }, '_id') : null,
             regionalManager_id ? getReference(User, { type: 'sub-admin', rails_id: regionalManager_id }, '_id') : null,
             salesRep_id ? getReference(User, { type: 'sub-admin', rails_id: salesRep_id }, '_id') : null,
-            old_bill_address_id ? getReference(Addresses, { old_id: old_bill_address_id }, '_id') : null,
-            old_ship_address_id ? getReference(Addresses, { old_id: old_ship_address_id }, '_id') : null,
+            old_bill_address_id ? getReference(Addresses, { old_id: old_bill_address_id }, '_id zipCode address1 address2') : null,
+            old_ship_address_id ? getReference(Addresses, { old_id: old_ship_address_id }, '_id zipCode address1 address2') : null,
           ]);
 
           const userData = {
@@ -449,6 +449,8 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
 
             billingAddress: billingAddress?._id || null,
             shippingAddress: shippingAddress?._id || null,
+            address: old_ship_address_id?.address1 || old_bill_address_id?.address1 || '',
+            zipCode: old_ship_address_id?.zipCode || old_bill_address_id?.zipCode || '',
 
             regionalManager: regionalManager?._id || null,
             accountManager: accountManager?._id || null,
