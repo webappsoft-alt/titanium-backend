@@ -163,6 +163,28 @@ exports.getUniqueAlloyFamilies = async (req, res) => {
     }
 };
 
+exports.getProductForm = async (req, res) => {
+    try {
+        const { nameValue } = req.query;
+
+        let query = { status: 'active', alloyFamily: nameValue };
+        // Perform the query with the dynamic filter and sorting
+        const alloyFamilies = await Products.find(query)
+            .select('type')
+            .sort({ _id: -1 });
+        res.status(200).json({
+            success: alloyFamilies?.length > 0,
+            product: alloyFamilies,
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        });
+    }
+};
 exports.getByNames = async (req, res) => {
     try {
         const { nameKey, nameValue, nameSelect } = req.query;

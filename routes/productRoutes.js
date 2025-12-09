@@ -10,6 +10,7 @@ router.get("/byId/:id", controller.getById);
 router.put("/:id", [middlewareAuth, admin], controller.update);
 router.get('/alloy-family', controller.getUniqueAlloyFamilies);
 router.get('/byName', middlewareAuth, controller.getByNames);
+router.get('/product-form', controller.getByNames);
 router.get('/header', controller.getNavHeader);
 router.delete("/:id", [middlewareAuth, admin], controller.delete_);
 

@@ -118,7 +118,7 @@ exports.getFilter = async (req, res) => {
 exports.getAll = async (req, res) => {
     try {
         const lastId = parseInt(req.params.id) || 1;
-        const { alloyFamily, type, primaryDimension, gradeAlloy, specifications, } = req.query
+        const { alloyFamily, type, primaryDimension, gradeAlloy, productForm, specifications, } = req.query
         if (isNaN(lastId) || lastId < 0) {
             return res.status(400).json({ error: 'Invalid last_id' });
         }
@@ -134,6 +134,7 @@ exports.getAll = async (req, res) => {
         }
         if (primaryDimension) query.primaryDimension = primaryDimension;
         if (gradeAlloy) query.gradeAlloy = gradeAlloy;
+        if (productForm) query.productForm = productForm;
         if (specifications) query.specifications = specifications;
 
         query.status = 'active'
