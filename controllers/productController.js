@@ -170,7 +170,7 @@ exports.getProductForm = async (req, res) => {
         let query = { status: 'active', alloyFamily: nameValue };
         // Perform the query with the dynamic filter and sorting
         const alloyFamilies = await Products.find(query)
-            .select('type')
+            .select('products.product products._id typ')
             .sort({ _id: -1 });
         res.status(200).json({
             success: alloyFamilies?.length > 0,
