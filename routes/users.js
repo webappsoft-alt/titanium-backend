@@ -316,7 +316,10 @@ router.post('/signup/customer', async (req, res) => {
       address,
       country, industry,
       zipCode, city, state } = req.body;
-
+    if (phone) {
+      const userCheck = await User.findOne({ phone });
+      if (userCheck) return res.status(400).send({ success: false, message: 'Phone Number already existed' });
+    }
 
     // const verificationRecord = await TempUser.findOne({ email });
 
@@ -920,10 +923,10 @@ router.put('/update-user/:id?', auth, async (req, res) => {
   if (!checkUser) {
     return res.status(404).json({ success: false, message: 'User not found!' })
   }
-  if (phone) {
-    const userCheck = await User.findOne({ _id: { $ne: userId }, phone });
-    if (userCheck) return res.status(400).send({ success: false, message: 'Phone Number already existed' });
-  }
+  // if (phone) {
+  //   const userCheck = await User.findOne({ _id: { $ne: userId }, phone });
+  //   if (userCheck) return res.status(400).send({ success: false, message: 'Phone Number already existed' });
+  // }
   // Create an object to store the fields to be updated
   let updateFields = Object.fromEntries(
     Object.entries({
