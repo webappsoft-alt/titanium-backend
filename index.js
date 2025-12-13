@@ -3,7 +3,6 @@ const { requestLogger } = require('./startup/requestLogger');
 const mongoose = require('mongoose');
 
 const express = require('express');
-const cors = require('cors');
 const app = express();
 const socketio = require("socket.io");
 const http = require('http');
@@ -35,15 +34,26 @@ admin.initializeApp({
   credential: admin.credential.cert(config),
   storageBucket: "gs://task-connect-app.appspot.com"
 });
+// ⚠️ Must call corsConfig before any routes
+require('./startup/corsConfig')(app);
+// Cache control
+app.use((req, res, next) => {
+  res.set({
+    "Cache-Control": "no-store, no-cache, must-revalidate, private",
+    "Pragma": "no-cache",
+    "Expires": "0"
+  });
+  next();
+});
 
-app.use(cors());
 app.use(requestLogger);
 
 require('./startup/config')();
 require('./startup/logging')();
-require('./startup/routes')(app);
 require('./startup/db')();
+require('./startup/prod')(app);
 require('./startup/validation')();
+require('./startup/routes')(app);
 
 const port = process.env.PORT || 5022;
 server.listen(port, '0.0.0.0', () => logger.info(`Listening on port  ${port}...`));

@@ -163,7 +163,7 @@ router.put('/reset-password/:userId/:token', passwordauth, async (req, res) => {
       websiteName: 'Titanium Industries',
     }
   })
-  sendEncryptedResponse(res, { success: true, message: "Password updated successfully" });
+  res.send(res, { success: true, message: "Password updated successfully" });
 });
 
 router.put('/update-password', passwordauth, async (req, res) => {
