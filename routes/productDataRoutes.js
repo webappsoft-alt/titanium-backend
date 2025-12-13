@@ -10,7 +10,7 @@ router.put("/edit/:id", controller.edit_);
 router.delete("/:id", controller.delete_);
 router.get("/header", controller.getNavHeader);
 
-router.get("/byId/:id", controller.getSeoById);
+router.get("/byId/:id", controller.getById);
 router.get("/seo/:id", controller.getSeoById);
 router.get("/seo-header", controller.getSeoNavHeader);
 module.exports = router;
