@@ -19,6 +19,7 @@ const Countries = require('../models/countries');
 const States = require('../models/states');
 const Addresses = require('../models/addresses');
 const { parseEmails } = require('../helpers/utils');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 const userPath = [
   { label: '/customer/quotes', value: 'quotes' },
   { label: '/customer/orders', value: 'orders' },
@@ -48,7 +49,7 @@ router.get('/me', auth, async (req, res) => {
     .lean()
   const competData = await CompetitorMarkup.findOne().sort({ _id: -1 }).select('minValue maxValue').lean()
   const token = generateAuthToken(user?._id, user?.type, user?.permissions || '');
-  res.send({ success: !!user, user: user, token, data: competData });
+  sendEncryptedResponse(res, { success: !!user, user: user, token, data: competData });
   const stateManagment = userPath.find(item => page?.startsWith(item.label)) || null;
   if (stateManagment?.value) {
     const updateduser = await User.findOneAndUpdate({ _id: req.user._id, currentWebState: { $ne: stateManagment?.value } }, { currentWebState: stateManagment?.value, oldWebState: user?.currentWebState || '', stateChangeDate: Date.now() }, { new: true })
@@ -57,7 +58,7 @@ router.get('/me', auth, async (req, res) => {
 
 router.get('/:email', async (req, res) => {
   const user = await User.findOne({ email: req.params.email }).select('-password').lean()
-  res.send({ success: !!user, user: user });
+  sendEncryptedResponse(res, { success: !!user, user: user });
 });
 router.get('/byId/:id', [auth, admin], async (req, res) => {
   try {
@@ -71,7 +72,7 @@ router.get('/byId/:id', [auth, admin], async (req, res) => {
       .populate('shippingAddress')
       .populate('billingAddress')
       .select('-password').lean()
-    res.send({ success: !!user, user: user });
+    sendEncryptedResponse(res, { success: !!user, user: user });
   } catch (error) {
     console.log(error)
     res.status(500).json({ error: 'Internal server error' });
@@ -94,7 +95,7 @@ router.get('/titanium/roles', [auth, admin], async (req, res) => {
     //   regionalManager: users.filter(user => user.roles.includes('RM'))
     // };
 
-    res.status(200).json({ data: categorizedUsers, success: true });
+    sendEncryptedResponse(res, { data: categorizedUsers, success: true });
   } catch (error) {
     console.log(error)
     res.status(500).json({ error: 'Internal server error' });
@@ -128,7 +129,7 @@ router.post('/forget-password', async (req, res) => {
       websiteName: 'Titanium Industries',
     }
   })
-  res.send({ success: true, message: 'Please check your email to reset your password', link });
+  sendEncryptedResponse(res, { success: true, message: 'Please check your email to reset your password', link });
   return
 
 });
@@ -162,7 +163,7 @@ router.put('/reset-password/:userId/:token', passwordauth, async (req, res) => {
       websiteName: 'Titanium Industries',
     }
   })
-  res.send({ success: true, message: "Password updated successfully" });
+  sendEncryptedResponse(res, { success: true, message: "Password updated successfully" });
 });
 
 router.put('/update-password', passwordauth, async (req, res) => {
@@ -183,7 +184,7 @@ router.put('/update-password', passwordauth, async (req, res) => {
 
   await user.save();
 
-  res.send({ success: true, message: "Password updated successfully" });
+  sendEncryptedResponse(res, { success: true, message: "Password updated successfully" });
 });
 
 router.put('/change-password', auth, async (req, res) => {
@@ -204,7 +205,7 @@ router.put('/change-password', auth, async (req, res) => {
 
     await user.save();
 
-    res.send({ success: true, message: "Password updated successfully" });
+    sendEncryptedResponse(res, { success: true, message: "Password updated successfully" });
   } catch (error) {
     console.error('Error sending verification code:', error);
     return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
@@ -233,7 +234,7 @@ router.post('/send-code', async (req, res) => {
       const tempVerification = new TempUser({ email, code: verificationCode });
       await tempVerification.save();
     }
-    return res.json({ success: true, message: 'Verification code sent successfully', verificationCode });
+    return sendEncryptedResponse(res, { success: true, message: 'Verification code sent successfully', verificationCode });
   } catch (error) {
     console.error('Error sending verification code:', error);
     return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
@@ -301,7 +302,7 @@ router.post('/verify-otp/registration', async (req, res) => {
         data: user
       })
     }
-    return res.json({ success: true, message: 'Account created successfully, Please wait for admin approval' });
+    return sendEncryptedResponse(res, { success: true, message: 'Account created successfully, Please wait for admin approval' });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
@@ -358,7 +359,7 @@ router.post('/signup/customer', async (req, res) => {
       const tempVerification = new TempUser({ email, code: verificationCode });
       await tempVerification.save();
     }
-    res.send({ success: true, message: 'Verification code match successfully', verificationCode });
+    sendEncryptedResponse(res, { success: true, message: 'Verification code match successfully', verificationCode });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
@@ -496,7 +497,7 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
 
     const bulkResult = await User.bulkWrite(validOperations, { ordered: false });
 
-    return res.json({
+    return sendEncryptedResponse(res, {
       success: true,
       message: 'Customer data processed successfully',
       matchedCount: bulkResult.matchedCount,
@@ -600,7 +601,7 @@ router.post('/import/titanium', [auth, admin], async (req, res) => {
     );
 
     // Respond with the results of all operations
-    res.json({
+    sendEncryptedResponse(res, {
       success: true,
       message: 'Customer data processed successfully.',
       results,
@@ -642,7 +643,7 @@ router.post('/register/titanium', [auth, admin], async (req, res) => {
 
     await newUser.save();
 
-    res.send({ success: true, message: 'Account created successfully' });
+    sendEncryptedResponse(res, { success: true, message: 'Account created successfully' });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
@@ -664,7 +665,7 @@ router.put('/titanium/:id', [auth, admin], async (req, res) => {
     }
     const updatedUser = await User.findByIdAndUpdate(userId, query)
 
-    res.send({ success: true, message: 'Account Updated successfully', updatedUser });
+    sendEncryptedResponse(res, { success: true, message: 'Account Updated successfully', updatedUser });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
@@ -807,9 +808,9 @@ router.get('/customer/:id/:status/:search?', [auth, admin], async (req, res) => 
     const totalPages = isGenerateReport == 'true' ? 0 : Math.ceil(totalCount / pageSize);
 
     if (users.length > 0) {
-      res.status(200).json({ success: true, users: users, count: { totalPage: totalPages, currentPageSize: users.length } });
+      sendEncryptedResponse(res, { success: true, users: users, count: { totalPage: totalPages, currentPageSize: users.length } });
     } else {
-      res.status(200).json({ success: false, users: [], message: 'No more users found', count: { totalPage: totalPages, currentPageSize: users.length } });
+      sendEncryptedResponse(res, { success: false, users: [], message: 'No more users found', count: { totalPage: totalPages, currentPageSize: users.length } });
     }
   } catch (error) {
     console.log(error)
@@ -839,7 +840,7 @@ router.get('/customer/:id/:status/:search?', [auth, admin], async (req, res) => 
 
 //     await newUser.save();
 
-//     res.send({ success: true, message: 'Account created successfully', user: newUser });
+//     sendEncryptedResponse(res,{ success: true, message: 'Account created successfully', user: newUser });
 //   } catch (error) {
 //     return res.status(500).json({ message: 'Internal server error', error: error.message });
 //   }
@@ -852,7 +853,7 @@ router.post('/google/auth', async (req, res) => {
 
     if (user) {
       const token = generateAuthToken(user._id, user.type);
-      res.send({ success: true, message: 'Login successfully', token: token, user: user });
+      sendEncryptedResponse(res, { success: true, message: 'Login successfully', token: token, user: user });
       return
     }
 
@@ -865,7 +866,7 @@ router.post('/google/auth', async (req, res) => {
 
     await newUser.save();
     const token = generateAuthToken(newUser._id, newUser.type);
-    res.send({ success: true, message: 'Account created successfully', token: token, user: newUser });
+    sendEncryptedResponse(res, { success: true, message: 'Account created successfully', token: token, user: newUser });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
@@ -881,7 +882,7 @@ router.post('/verify-otp/forget-password', passwordauth, async (req, res) => {
 
     if (Number(user.code) !== Number(code)) return res.status(400).send({ success: false, message: 'Incorrect code.' });
 
-    return res.json({ success: true, message: 'Verification code match successfully' });
+    return sendEncryptedResponse(res, { success: true, message: 'Verification code match successfully' });
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error', error: error.message });
   }
@@ -896,7 +897,7 @@ router.post('/check-email', async (req, res) => {
   const user = await User.findOne({ email });
   if (user) return res.status(400).send({ success: false, message: 'Email already existed' });
 
-  res.send({ success: true, message: "Email doesn't existed" });
+  sendEncryptedResponse(res, { success: true, message: "Email doesn't existed" });
 });
 router.post('/check-phone', async (req, res) => {
   const { error } = phoneApiBodyValidate(req.body);
@@ -907,7 +908,7 @@ router.post('/check-phone', async (req, res) => {
   const user = await User.findOne({ phone });
   if (user) return res.status(400).send({ success: false, message: 'Phone Number already existed' });
 
-  res.send({ success: true, message: "Phone Number doesn't existed" });
+  sendEncryptedResponse(res, { success: true, message: "Phone Number doesn't existed" });
 });
 
 router.put('/update-user/:id?', auth, async (req, res) => {
@@ -958,7 +959,7 @@ router.put('/update-user/:id?', auth, async (req, res) => {
   if (!user) return res.status(400).send({ success: false, message: 'The User with the given ID was not found.' });
   const updatedUser = await User.findOne({ _id: userId }).select('-password')
 
-  res.send({ success: true, message: 'User updated successfully', user: updatedUser });
+  sendEncryptedResponse(res, { success: true, message: 'User updated successfully', user: updatedUser });
 });
 
 router.post('/admin/create-user', [auth, admin], async (req, res) => {
@@ -1018,7 +1019,7 @@ router.post('/admin/create-user', [auth, admin], async (req, res) => {
     // Fetch created user without password
     const newUser = await User.findById(user._id).select('-password');
 
-    res.status(201).json({ success: true, message: 'User created successfully', user: newUser });
+    sendEncryptedResponse(res, { success: true, message: 'User created successfully', user: newUser });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error' });
@@ -1053,7 +1054,7 @@ router.put('/change/:status/:id', [auth, admin], async (req, res) => {
     })
   }
 
-  res.send({ success: true, message: 'User Updated successfully', user });
+  sendEncryptedResponse(res, { success: true, message: 'User Updated successfully', user });
 });
 
 router.delete('/', auth, async (req, res) => {
@@ -1062,7 +1063,7 @@ router.delete('/', auth, async (req, res) => {
 
   if (!user) return res.status(400).send({ success: false, message: 'The User with the given ID was not found.' });
 
-  res.send({ success: true, message: 'User deleted successfully', user });
+  sendEncryptedResponse(res, { success: true, message: 'User deleted successfully', user });
 });
 
 

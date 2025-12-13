@@ -1,4 +1,5 @@
 const Competitor = require('../models/competitorDomain');  // Your Mongoose schema file
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 exports.create = async (req, res) => {
     try {
@@ -8,7 +9,7 @@ exports.create = async (req, res) => {
 
         await domainData.save();
 
-        res.status(201).json({ success: true, message: "Competitor created successfully", domainData });
+        sendEncryptedResponse(res, { success: true, message: "Competitor created successfully", domainData });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -31,7 +32,7 @@ exports.getAll = async (req, res) => {
         const totalCount = await Competitor.countDocuments(query);
         const totalPages = Math.ceil(totalCount / pageSize);
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true, domainData,
             count: { totalPage: totalPages, currentPageSize: domainData.length }
         });
@@ -44,7 +45,7 @@ exports.getAllData = async (req, res) => {
 
         let query = { status: 'active' }
         const domainData = await Competitor.find(query).sort({ _id: -1 }).lean();
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true, domainData,
         });
     } catch (error) {
@@ -59,7 +60,7 @@ exports.getById = async (req, res) => {
         if (!quotation) {
             return res.status(404).json({ success: false, message: "Competitor not found" });
         }
-        res.status(200).json({ success: true, data: quotation });
+        sendEncryptedResponse(res, { success: true, data: quotation });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -73,7 +74,7 @@ exports.edit = async (req, res) => {
         if (!updatedCompetitor) {
             return res.status(404).json({ success: false, message: "Competitor not found" });
         }
-        res.status(200).json({ success: true, message: "Competitor updated successfully", data: updatedCompetitor });
+        sendEncryptedResponse(res, { success: true, message: "Competitor updated successfully", data: updatedCompetitor });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -86,7 +87,7 @@ exports.delete_ = async (req, res) => {
         if (!deletedCompetitor) {
             return res.status(404).json({ success: false, message: "Competitor not found" });
         }
-        res.status(200).json({ success: true, message: "Competitor deleted successfully" });
+        sendEncryptedResponse(res, { success: true, message: "Competitor deleted successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

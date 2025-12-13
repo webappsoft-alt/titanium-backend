@@ -1,9 +1,10 @@
 const File = require('../models/fileDetail');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 exports.create = async (req, res) => {
     try {
         const userId = req.user._id
-        const { name, size, url, type , uploadedType} = req.body;
+        const { name, size, url, type, uploadedType } = req.body;
 
         const newFile = await File.create({
             name,
@@ -14,7 +15,7 @@ exports.create = async (req, res) => {
             uploadedBy: userId
         });
 
-        res.status(201).json({ message: 'File uploaded successfully', data: newFile, success: true });
+        sendEncryptedResponse(res, { message: 'File uploaded successfully', data: newFile, success: true });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error uploading file', error });
@@ -45,7 +46,7 @@ exports.getAll = async (req, res) => {
         const totalCount = await File.countDocuments(query);
         const totalPages = Math.ceil(totalCount / pageSize);
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true,
             files,
             count: {
@@ -68,7 +69,7 @@ exports.getById = async (req, res) => {
             return res.status(404).json({ message: 'File not found' });
         }
 
-        res.status(200).json({ data: file });
+        sendEncryptedResponse(res, { data: file });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch file', error });
     }
@@ -84,7 +85,7 @@ exports.update = async (req, res) => {
 
         if (!updated) return res.status(404).json({ message: 'File not found' });
 
-        res.status(200).json({ message: 'File updated successfully', data: updated });
+        sendEncryptedResponse(res, { message: 'File updated successfully', data: updated });
     } catch (error) {
         res.status(400).json({ message: 'Failed to update file', error });
     }
@@ -96,7 +97,7 @@ exports.delete_ = async (req, res) => {
         const deleted = await File.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ message: 'File not found' });
 
-        res.status(200).json({ message: 'File deleted successfully' });
+        sendEncryptedResponse(res, { message: 'File deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete file', error });
     }

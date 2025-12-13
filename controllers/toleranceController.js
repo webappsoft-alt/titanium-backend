@@ -1,4 +1,5 @@
 const Tolerances = require("../models/tolerance");
+const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
 
 exports.getTolerance = async (req, res) => {
     try {
@@ -14,7 +15,7 @@ exports.getTolerance = async (req, res) => {
             .sort({ _id: -1 })
             .lean();
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: !!toleranceData,
             tolerance: toleranceData,
         });
@@ -42,7 +43,7 @@ exports.getMultipleTolerances = async (req, res) => {
             .sort({ _id: -1 })
             .lean();
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: toleranceData.length > 0,
             tolerances: toleranceData,
         });

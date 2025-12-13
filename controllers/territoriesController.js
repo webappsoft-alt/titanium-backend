@@ -1,4 +1,5 @@
 const Territories = require('../models/territories');  // Your Mongoose schema file
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 exports.create = async (req, res) => {
     try {
@@ -8,7 +9,7 @@ exports.create = async (req, res) => {
 
         await territories.save();
 
-        res.status(201).json({ success: true, message: "Territories created successfully", territories });
+        sendEncryptedResponse(res, { success: true, message: "Territories created successfully", territories });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -31,7 +32,7 @@ exports.getAll = async (req, res) => {
         const totalCount = await Territories.countDocuments(query);
         const totalPages = Math.ceil(totalCount / pageSize);
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true, territories,
             count: { totalPage: totalPages, currentPageSize: territories.length }
         });
@@ -44,7 +45,7 @@ exports.getAllData = async (req, res) => {
 
         let query = { status: 'active' }
         const territories = await Territories.find(query).select('-countries -states').sort({ _id: -1 }).lean();
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true, territories,
         });
     } catch (error) {
@@ -59,7 +60,7 @@ exports.getById = async (req, res) => {
         if (!quotation) {
             return res.status(404).json({ success: false, message: "Territories not found" });
         }
-        res.status(200).json({ success: true, data: quotation });
+        sendEncryptedResponse(res, { success: true, data: quotation });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -73,7 +74,7 @@ exports.edit = async (req, res) => {
         if (!updatedTerritories) {
             return res.status(404).json({ success: false, message: "Territories not found" });
         }
-        res.status(200).json({ success: true, message: "Territories updated successfully", data: updatedTerritories });
+        sendEncryptedResponse(res, { success: true, message: "Territories updated successfully", data: updatedTerritories });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -86,7 +87,7 @@ exports.delete_ = async (req, res) => {
         if (!deletedTerritories) {
             return res.status(404).json({ success: false, message: "Territories not found" });
         }
-        res.status(200).json({ success: true, message: "Territories deleted successfully" });
+        sendEncryptedResponse(res, { success: true, message: "Territories deleted successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

@@ -1,5 +1,6 @@
 const Countries = require('../models/countries');
 const States = require('../models/states');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 // Create or update states in bulk
 exports.create = async (req, res) => {
@@ -44,7 +45,7 @@ exports.create = async (req, res) => {
         );
 
         const result = await States.bulkWrite(bulkOps);
-        res.status(200).json({ message: 'States processed successfully', result, success: true });
+        sendEncryptedResponse(res, { message: 'States processed successfully', result, success: true });
 
     } catch (error) {
         console.error('Error in states bulk create:', error);
@@ -55,7 +56,7 @@ exports.create = async (req, res) => {
 exports.getAll = async (req, res) => {
     try {
         const states = await States.find().select('name abbr _id old_id country').sort({ _id: -1 }); // optional: sort alphabetically
-        res.status(200).json({ data: states, success: states?.length > 0 });
+        sendEncryptedResponse(res, { data: states, success: states?.length > 0 });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch states', error });
     }
@@ -70,7 +71,7 @@ exports.getById = async (req, res) => {
             return res.status(404).json({ message: 'States not found' });
         }
 
-        res.status(200).json({ state });
+        sendEncryptedResponse(res, { state });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch state', error });
     }
@@ -85,7 +86,7 @@ exports.edit_ = async (req, res) => {
         });
         if (!updated) return res.status(404).json({ message: 'States not found' });
 
-        res.status(200).json(updated);
+        sendEncryptedResponse(res, updated);
     } catch (error) {
         res.status(400).json({ message: 'Failed to update state', error });
     }
@@ -96,7 +97,7 @@ exports.delete_ = async (req, res) => {
         const deleted = await States.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ message: 'States not found' });
 
-        res.status(200).json({ message: 'States deleted successfully' });
+        sendEncryptedResponse(res, { message: 'States deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete state', error });
     }

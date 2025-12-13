@@ -1,4 +1,5 @@
 const Density = require('../models/density');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 // Create or update densities in bulk
 exports.create = async (req, res) => {
@@ -27,7 +28,7 @@ exports.create = async (req, res) => {
         }
 
         const result = await Density.bulkWrite(bulkOps);
-        res.status(200).json({ message: 'Densities processed successfully', result, success: true });
+        sendEncryptedResponse(res, { message: 'Densities processed successfully', result, success: true });
     } catch (error) {
         console.log(error)
         res.status(500).json({ message: 'Error processing densities', error });
@@ -59,7 +60,7 @@ exports.getSelectedDensity = async (req, res) => {
         }
 
         // Return the results
-        res.status(200).json({ success: true, data });
+        sendEncryptedResponse(res, { success: true, data });
 
     } catch (error) {
         console.error("Error in density:", error);
@@ -73,7 +74,7 @@ exports.getSelectedDensity = async (req, res) => {
 exports.getAll = async (req, res) => {
     try {
         const densities = await Density.find().sort({ iso_name: 1 }); // optional: sort alphabetically
-        res.status(200).json({ data: densities, success: densities?.length > 0 });
+        sendEncryptedResponse(res, { data: densities, success: densities?.length > 0 });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch densities', error });
     }
@@ -88,7 +89,7 @@ exports.getById = async (req, res) => {
             return res.status(404).json({ message: 'Density not found' });
         }
 
-        res.status(200).json({ density });
+        sendEncryptedResponse(res, { density });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch density', error });
     }
@@ -103,7 +104,7 @@ exports.edit_ = async (req, res) => {
         });
         if (!updated) return res.status(404).json({ message: 'Density not found' });
 
-        res.status(200).json(updated);
+        sendEncryptedResponse(res, updated);
     } catch (error) {
         res.status(400).json({ message: 'Failed to update density', error });
     }
@@ -114,7 +115,7 @@ exports.delete_ = async (req, res) => {
         const deleted = await Density.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ message: 'Density not found' });
 
-        res.status(200).json({ message: 'Density deleted successfully' });
+        sendEncryptedResponse(res, { message: 'Density deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete density', error });
     }

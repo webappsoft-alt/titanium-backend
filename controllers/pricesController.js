@@ -1,4 +1,5 @@
 const Prices = require("../models/prices");
+const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
 
 exports.getPrice = async (req, res) => {
     try {
@@ -18,13 +19,13 @@ exports.getPrice = async (req, res) => {
         let priceData = await Prices.findOne(query)
             .sort({ _id: -1 })
             .lean();
-// console.log(priceData)
+        // console.log(priceData)
         // If both id and priceLabel are provided, filter out non-matching prices
         if (req.query.priceLabel && req.query.id && priceData) {
             priceData.prices = priceData.prices.find(price => price.priceLabel === req.query.priceLabel);
         }
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: !!priceData,
             prices: priceData,
         });
@@ -46,7 +47,7 @@ exports.getDiscounted = async (req, res) => {
             .sort({ _id: -1 }).limit(20)
             .lean();
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: priceData?.length > 0,
             prices: priceData,
         });
@@ -88,7 +89,7 @@ exports.getMultiplePrices = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: priceData.length > 0,
             prices: priceData,
         });

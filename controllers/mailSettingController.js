@@ -1,5 +1,6 @@
 const MailSettings = require('../models/mailSetting');
 const bcrypt = require('bcryptjs');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 // Save or Update Mail Settings
 exports.saveMailSettings = async (req, res) => {
@@ -21,7 +22,7 @@ exports.saveMailSettings = async (req, res) => {
             await mailSettings.save();
         }
 
-        res.status(200).json({ success: true, message: "Mail settings updated successfully", mailSettings });
+        sendEncryptedResponse(res, { success: true, message: "Mail settings updated successfully", mailSettings });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -34,7 +35,7 @@ exports.getMailSettings = async (req, res) => {
         if (!mailSetting) {
             return res.status(404).json({ success: false, message: "Mail settings not found" });
         }
-        res.status(200).json({ success: true, mailSetting });
+        sendEncryptedResponse(res, { success: true, mailSetting });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

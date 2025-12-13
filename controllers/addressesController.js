@@ -3,6 +3,7 @@ const { User } = require('../models/user');
 const Addresses = require('../models/addresses');
 const Countries = require('../models/countries');
 const States = require('../models/states');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 exports.create_ = async (req, res) => {
     const { addresses } = req.body;
@@ -73,7 +74,7 @@ exports.create_ = async (req, res) => {
 
         const bulkResult = await Addresses.bulkWrite(validOperations, { ordered: false });
 
-        return res.json({
+        return sendEncryptedResponse(res, {
             success: true,
             message: 'Addresses data processed successfully',
             matchedCount: bulkResult.matchedCount,
@@ -171,7 +172,7 @@ exports.update = async (req, res) => {
             }
         }
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true,
             message: "Addresses updated successfully",
             billingAddress,

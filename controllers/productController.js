@@ -2,6 +2,7 @@ const Products = require("../models/_product");
 const DiscountedProduct = require("../models/discountedProduct");
 const Prices = require("../models/prices");
 const Tolerance = require("../models/tolerance");
+const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
 
 // Create or update products, prices, and tolerances
 exports.create = async (req, res) => {
@@ -126,7 +127,7 @@ exports.create = async (req, res) => {
             discountedData.length > 0 ? DiscountedProduct.bulkWrite(discountedData) : []
         ]);
 
-        res.status(201).json({
+        sendEncryptedResponse(res, {
             success: true,
             message: "Entries created/updated successfully",
             products: productResult,
@@ -149,7 +150,7 @@ exports.getUniqueAlloyFamilies = async (req, res) => {
     try {
         const alloyFamilies = await Products.distinct('alloyFamily', { status: 'active' }).sort({ _id: -1 });
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: alloyFamilies?.length > 0,
             alloyFamilies: alloyFamilies,
         });
@@ -172,7 +173,7 @@ exports.getProductForm = async (req, res) => {
         const alloyFamilies = await Products.find(query)
             .select('products.product products._id type')
             .sort({ _id: -1 });
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: alloyFamilies?.length > 0,
             product: alloyFamilies,
         });
@@ -195,7 +196,7 @@ exports.getByNames = async (req, res) => {
         const alloyFamilies = await Products.find(query)
             .select(nameSelect)
             .sort({ _id: -1 });
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: alloyFamilies?.length > 0,
             product: alloyFamilies,
         });
@@ -227,7 +228,7 @@ exports.getAll = async (req, res) => {
         const totalCount = await Products.countDocuments(query);
         const totalPages = Math.ceil(totalCount / pageSize);;
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: metalAlloys?.length > 0,
             products: metalAlloys,
             count: { totalPage: totalPages, currentPageSize: metalAlloys.length }
@@ -273,7 +274,7 @@ exports.getNavHeader = async (req, res) => {
             };
         });
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: typeData.length > 0,
             products: typeData,
         });
@@ -299,7 +300,7 @@ exports.getById = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: !!metalAlloy,
             message: "Products entry retrieved successfully",
             product: metalAlloy,
@@ -330,7 +331,7 @@ exports.update = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true,
             message: "Products entry updated successfully",
             data: updatedProducts,
@@ -355,7 +356,7 @@ exports.delete_ = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true,
             message: "Products entry deleted successfully",
         });

@@ -1,4 +1,5 @@
 const CategoryContent = require('../models/categoryContent');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 // Create or Update Category
 exports.create_ = async (req, res) => {
@@ -18,14 +19,14 @@ exports.create_ = async (req, res) => {
             category.images = images ?? category.images;
             await category.save();
 
-            return res.status(200).json({ message: 'Category updated successfully.', category });
+            return sendEncryptedResponse(res, { message: 'Category updated successfully.', category });
         }
 
         // Create new category
         category = new CategoryContent({ name, description, images });
         await category.save();
 
-        return res.status(201).json({ message: 'Category created successfully.', category });
+        return sendEncryptedResponse(res, { message: 'Category created successfully.', category });
 
     } catch (error) {
         console.error('Error in createOrUpdateCategory:', error);
@@ -36,7 +37,7 @@ exports.getAll = async (req, res) => {
     try {
 
         const categories = await CategoryContent.find().sort({ _id: -1 }).lean();
-        return res.status(200).json({ categories });
+        return sendEncryptedResponse(res, { categories });
 
     } catch (error) {
         console.error('Error in getCategory:', error);
@@ -47,7 +48,7 @@ exports.getById = async (req, res) => {
     try {
         const id = req.params.id
         const category = await CategoryContent.findOne({ _id: id }).lean();
-        return res.status(200).json({ category });
+        return sendEncryptedResponse(res, { category });
 
     } catch (error) {
         console.error('Error in getCategory:', error);

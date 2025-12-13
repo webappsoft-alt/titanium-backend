@@ -1,4 +1,5 @@
 const GeneralContent = require('../models/generalContent');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 // Bulk Create or Update
 exports.bulkCreateOrUpdate = async (req, res) => {
@@ -35,7 +36,7 @@ exports.bulkCreateOrUpdate = async (req, res) => {
             }
         }
 
-        return res.status(200).json({ message: 'Content Updated Successfully', results, success: true });
+        return sendEncryptedResponse(res, { message: 'Content Updated Successfully', results, success: true });
     } catch (error) {
         console.error('Error in bulkCreateOrUpdate:', error);
         return res.status(500).json({ message: 'Internal server error.', error });
@@ -46,7 +47,7 @@ exports.getAll = async (req, res) => {
     try {
 
         const data = await GeneralContent.find().sort({ _id: -1 }).lean();
-        return res.status(200).json({ data });
+        return sendEncryptedResponse(res, { data });
 
     } catch (error) {
         console.error('Error in getCategory:', error);

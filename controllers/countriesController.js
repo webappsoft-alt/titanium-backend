@@ -1,4 +1,5 @@
 const Country = require('../models/countries');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 // Create or update countries in bulk
 exports.create = async (req, res) => {
@@ -34,7 +35,7 @@ exports.create = async (req, res) => {
         }
 
         const result = await Country.bulkWrite(bulkOps);
-        res.status(200).json({ message: 'Countries processed successfully', result, success: true });
+        sendEncryptedResponse(res, { message: 'Countries processed successfully', result, success: true });
     } catch (error) {
         console.log(error)
         res.status(500).json({ message: 'Error processing countries', error });
@@ -43,7 +44,7 @@ exports.create = async (req, res) => {
 exports.getAll = async (req, res) => {
     try {
         const countries = await Country.find().select('name iso_name old_id _id iso').sort({ iso_name: 1 }); // optional: sort alphabetically
-        res.status(200).json({ data: countries, success: countries?.length > 0 });
+        sendEncryptedResponse(res, { data: countries, success: countries?.length > 0 });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch countries', error });
     }
@@ -58,7 +59,7 @@ exports.getById = async (req, res) => {
             return res.status(404).json({ message: 'Country not found' });
         }
 
-        res.status(200).json({ country });
+        sendEncryptedResponse(res, { country });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch country', error });
     }
@@ -73,7 +74,7 @@ exports.edit_ = async (req, res) => {
         });
         if (!updated) return res.status(404).json({ message: 'Country not found' });
 
-        res.status(200).json(updated);
+        sendEncryptedResponse(res, updated);
     } catch (error) {
         res.status(400).json({ message: 'Failed to update country', error });
     }
@@ -84,7 +85,7 @@ exports.delete_ = async (req, res) => {
         const deleted = await Country.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ message: 'Country not found' });
 
-        res.status(200).json({ message: 'Country deleted successfully' });
+        sendEncryptedResponse(res, { message: 'Country deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete country', error });
     }

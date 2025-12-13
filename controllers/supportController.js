@@ -1,4 +1,5 @@
 const Support = require("../models/Support");
+const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
 // const { sendNotification } = require("./notificationCreateService");
 
 exports.create = async (req, res) => {
@@ -14,7 +15,7 @@ exports.create = async (req, res) => {
 
     await support.save();
 
-    res.status(201).json({ success: true, message: 'Message has sent successfully',});
+    sendEncryptedResponse(res, { success: true, message: 'Message has sent successfully', });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
@@ -46,9 +47,9 @@ exports.getAdminnotifications = async (req, res) => {
     const totalPages = Math.ceil(totalCount.length / pageSize);
 
     if (categories.length > 0) {
-      res.status(200).json({ success: true, support: categories, count: { totalPage: totalPages, currentPageSize: categories.length } });
+      sendEncryptedResponse(res, { success: true, support: categories, count: { totalPage: totalPages, currentPageSize: categories.length } });
     } else {
-      res.status(200).json({ success: false, message: 'No more support found', support: categories, count: { totalPage: totalPages, currentPageSize: 0 } });
+      sendEncryptedResponse(res, { success: false, message: 'No more support found', support: categories, count: { totalPage: totalPages, currentPageSize: 0 } });
     }
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
@@ -80,7 +81,7 @@ exports.attendTheSupport = async (req, res) => {
     //   fcmtoken: service.user.fcmtoken,
     // });
 
-    res.status(200).json({ message: `Support Attended successfully`, service: service, success: true });
+    sendEncryptedResponse(res, { message: `Support Attended successfully`, service: service, success: true });
 
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error: error.message });

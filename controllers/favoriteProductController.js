@@ -1,4 +1,5 @@
-const FavoriteProducts = require('../models/favoriteProducts')
+const FavoriteProducts = require('../models/favoriteProducts');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 // Add a new favorite item
 exports.create_ = async (req, res) => {
     try {
@@ -13,7 +14,7 @@ exports.create_ = async (req, res) => {
         if (existing) {
             // Remove if exists (toggle off)
             await FavoriteProducts.findByIdAndDelete(existing._id);
-            return res.status(200).json({ success: true, message: 'Removed from favorites' });
+            return sendEncryptedResponse(res, { success: true, message: 'Removed from favorites' });
         }
 
         // Else, add it (toggle on)
@@ -25,7 +26,7 @@ exports.create_ = async (req, res) => {
         const favorite = new FavoriteProducts(favoriteData);
         await favorite.save();
 
-        res.status(201).json({
+        sendEncryptedResponse(res, {
             success: true,
             message: 'Added to favorites successfully',
             data: favorite,
@@ -39,7 +40,7 @@ exports.create_ = async (req, res) => {
 exports.getByUser = async (req, res) => {
     try {
         const favorites = await FavoriteProducts.find({ user: req.user._id }).populate('productData');
-        res.status(200).json({ success: true, data: favorites });
+        sendEncryptedResponse(res, { success: true, data: favorites });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -54,7 +55,7 @@ exports.getById = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Favorite Product not found' });
         }
 
-        res.status(200).json({ success: true, data: favorite });
+        sendEncryptedResponse(res, { success: true, data: favorite });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -69,7 +70,7 @@ exports.remove_ = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Favorite Product not found or not authorized' });
         }
 
-        res.status(200).json({ success: true, message: 'Favorite Product removed successfully' });
+        sendEncryptedResponse(res, { success: true, message: 'Favorite Product removed successfully' });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

@@ -12,6 +12,7 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 const { sendGridEmail } = require('./sendGridEmial');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 // Use multer to handle file uploads
 const storage = multer.memoryStorage();
@@ -242,7 +243,7 @@ exports.createQuotation = async (req, res) => {
                     { path: 'shippingAddress' }
                 ]
             });
-        res.status(201).json({ success: true, quotation: quotation, message: 'Order Created Successfully' });
+        sendEncryptedResponse(res, { success: true, quotation: quotation, message: 'Order Created Successfully' });
 
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -312,7 +313,7 @@ exports.getCustomerQuotations = async (req, res) => {
             query.isOpenQuote = false
             const orders = await Quotation.find(query).select('totalAmount createdAt updatedAt status type quoteNo orderNo').sort({ _id: -1 }).skip(skip).limit(pageSize).lean();
 
-            return res.status(200).json({
+            return sendEncryptedResponse(res, {
                 success: true,
                 quotations,
                 orders
@@ -323,7 +324,7 @@ exports.getCustomerQuotations = async (req, res) => {
             const totalCount = await Quotation.countDocuments(query);
             const totalPages = Math.ceil(totalCount / pageSize);
 
-            return res.status(200).json({
+            return sendEncryptedResponse(res, {
                 success: true, quotations,
                 count: { totalPage: totalPages, currentPageSize: quotations.length }
             });
@@ -411,7 +412,7 @@ exports.getAllQuotations = async (req, res) => {
 
         const totalCount = await Quotation.countDocuments(query);
         const totalPages = Math.ceil(totalCount / pageSize);
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true, quotations,
             count: { totalPage: totalPages, currentPageSize: quotations.length }
         });
@@ -440,7 +441,7 @@ exports.generateExcel = async (req, res) => {
             })
             .lean();
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true, quotations,
         });
     } catch (error) {
@@ -454,7 +455,6 @@ exports.getQuotationStats = async (req, res) => {
         if (!startDate) {
             return res.status(400).json({ message: "Start date is required" });
         }
-
         const start = new Date(startDate);
         let end = endDate ? new Date(endDate) : new Date();
         end.setHours(23, 59, 59, 999);
@@ -475,7 +475,7 @@ exports.getQuotationStats = async (req, res) => {
             }
         ]);
 
-        res.json({ stats: stats[0] || { totalAmount: 0, complete: 0, incomplete: 0 } });
+        sendEncryptedResponse(res, { stats: stats[0] || { totalAmount: 0, complete: 0, incomplete: 0 } });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });
@@ -497,7 +497,7 @@ exports.getQuotationById = async (req, res) => {
         if (!quotation) {
             return res.status(404).json({ success: false, message: "Quotation not found" });
         }
-        res.status(200).json({ success: true, data: quotation });
+        sendEncryptedResponse(res, { success: true, data: quotation });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -506,7 +506,7 @@ exports.getQuotationByUserId = async (req, res) => {
     try {
         const quotation = await Quotation.find({ user: req.params.id, status: { $in: ['closed', 'pending', 'approved', 'completed'] } });
 
-        res.status(200).json({ success: quotation?.length > 0, data: quotation });
+        sendEncryptedResponse(res, { success: quotation?.length > 0, data: quotation });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -515,7 +515,7 @@ exports.getOpenQuotationByUserId = async (req, res) => {
     try {
         const quotation = await Quotation.findOne({ user: req.params.id, status: { $in: ['pending'] }, type: 'open-quote' });
 
-        res.status(200).json({ success: !!quotation, data: quotation });
+        sendEncryptedResponse(res, { success: !!quotation, data: quotation });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -545,7 +545,7 @@ exports.updateQuotation = async (req, res) => {
 
             const cart = await Cart.findOneAndDelete(query)
         }
-        res.status(200).json({ success: true, message: "Quotation updated successfully", data: updatedQuotation });
+        sendEncryptedResponse(res, { success: true, message: "Quotation updated successfully", data: updatedQuotation });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -600,7 +600,7 @@ exports.updateStatus = async (req, res) => {
                 subject: `Welcome to Titanium Industries`
             })
         }
-        res.status(200).json({ success: true, message: "Quotation updated successfully", data: updatedQuotation });
+        sendEncryptedResponse(res, { success: true, message: "Quotation updated successfully", data: updatedQuotation });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -641,7 +641,7 @@ exports.sendQuotationEmail = [
                         },
                     ],
                 })
-                return res.status(200).json({ success: true, message: 'Email sent successfully' });
+                return sendEncryptedResponse(res, { success: true, message: 'Email sent successfully' });
             }
             await sendGridEmail({
                 sendCode: false,
@@ -730,7 +730,7 @@ exports.sendQuotationEmail = [
                 });
             }
 
-            res.status(200).json({ success: true, message: 'Email sent successfully' });
+            sendEncryptedResponse(res, { success: true, message: 'Email sent successfully' });
         } catch (error) {
             console.error(error);
             res.status(500).json({ success: false, message: error.message });
@@ -743,7 +743,7 @@ exports.deleteQuotation = async (req, res) => {
         if (!deletedQuotation) {
             return res.status(404).json({ success: false, message: "Quotation not found" });
         }
-        res.status(200).json({ success: true, message: "Quotation deleted successfully" });
+        sendEncryptedResponse(res, { success: true, message: "Quotation deleted successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

@@ -1,4 +1,5 @@
 const ToleranceWeigth = require('../models/toleranceWeigthCal');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 exports.create = async (req, res) => {
   try {
@@ -6,7 +7,7 @@ exports.create = async (req, res) => {
 
     const inserted = await ToleranceWeigth.create(data);
 
-    res.status(201).json({
+    sendEncryptedResponse(res, {
       message: 'Data inserted successfully',
       data: inserted,
       success: true
@@ -37,7 +38,7 @@ exports.getAll = async (req, res) => {
     const totalCount = await ToleranceWeigth.countDocuments();
 
     const totalPages = Math.ceil(totalCount / pageSize);
-    res.status(200).json({
+    sendEncryptedResponse(res, {
       success: data.length > 0,
       data,
       count: { totalPage: totalPages, currentPageSize: data.length }
@@ -74,7 +75,7 @@ exports.getSelectedToleranceWeigth = async (req, res) => {
     }
 
     // Return the results
-    res.status(200).json({ success: true, data });
+    sendEncryptedResponse(res, { success: true, data });
 
   } catch (error) {
     console.error("Error in density:", error);
@@ -91,7 +92,7 @@ exports.getById = async (req, res) => {
     const data = await ToleranceWeigth.findById(req.params.id);
     if (!data) return res.status(404).json({ message: 'Item not found' });
 
-    res.status(200).json(data);
+    sendEncryptedResponse(res, data);
   } catch (error) {
     console.error('Get By ID Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -105,7 +106,7 @@ exports.update = async (req, res) => {
 
     if (!updated) return res.status(404).json({ message: 'Item not found' });
 
-    res.status(200).json({ message: 'Updated successfully', data: updated, success: true });
+    sendEncryptedResponse(res, { message: 'Updated successfully', data: updated, success: true });
   } catch (error) {
     console.error('Update Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -119,7 +120,7 @@ exports.delete_ = async (req, res) => {
 
     if (!deleted) return res.status(404).json({ message: 'Item not found' });
 
-    res.status(200).json({ message: 'Deleted successfully', data: deleted, success: true });
+    sendEncryptedResponse(res, { message: 'Deleted successfully', data: deleted, success: true });
   } catch (error) {
     console.error('Delete Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });

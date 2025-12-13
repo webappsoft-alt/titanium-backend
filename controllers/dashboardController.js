@@ -1,5 +1,6 @@
 const Quotation = require("../models/quotation");
 const { User } = require('../models/user');
+const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
 exports.getCount = async (req, res) => {
     try {
         // Define queries to count documents
@@ -27,7 +28,7 @@ exports.getCount = async (req, res) => {
         );
 
         // Respond with counts
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true,
             count: { openQuote, closeQuote, salesQuote, customers },
         });

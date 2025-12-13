@@ -1,4 +1,5 @@
 const R27Margin = require('../models/r27Margin');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 
 // Create or update r27Margin in bulk
 exports.create = async (req, res) => {
@@ -27,7 +28,7 @@ exports.create = async (req, res) => {
         }
 
         const result = await R27Margin.bulkWrite(bulkOps);
-        res.status(200).json({ message: 'R27 Margin processed successfully', result, success: true });
+        sendEncryptedResponse(res, { message: 'R27 Margin processed successfully', result, success: true });
     } catch (error) {
         console.log(error)
         res.status(500).json({ message: 'Error processing R27 Margin', error });
@@ -36,7 +37,7 @@ exports.create = async (req, res) => {
 exports.getAll = async (req, res) => {
     try {
         const r27Margin = await R27Margin.find().sort({ _id: -1 }); // optional: sort alphabetically
-        res.status(200).json({ data: r27Margin, success: r27Margin?.length > 0 });
+        sendEncryptedResponse(res, { data: r27Margin, success: r27Margin?.length > 0 });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch R27 Margin', error });
     }
@@ -51,7 +52,7 @@ exports.getById = async (req, res) => {
             return res.status(404).json({ message: 'R27 Margin not found' });
         }
 
-        res.status(200).json({ country });
+        sendEncryptedResponse(res, { country });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch country', error });
     }
@@ -72,7 +73,7 @@ exports.getByValue = async (req, res) => {
                 },
             ],
         });
-        res.status(200).json({ data: result });
+        sendEncryptedResponse(res, { data: result });
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch country', error });
     }
@@ -87,7 +88,7 @@ exports.edit_ = async (req, res) => {
         });
         if (!updated) return res.status(404).json({ message: 'R27 Margin not found' });
 
-        res.status(200).json(updated);
+        sendEncryptedResponse(res, updated);
     } catch (error) {
         res.status(400).json({ message: 'Failed to update country', error });
     }
@@ -98,7 +99,7 @@ exports.delete_ = async (req, res) => {
         const deleted = await R27Margin.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ message: 'R27 Margin not found' });
 
-        res.status(200).json({ message: 'R27 Margin deleted successfully' });
+        sendEncryptedResponse(res, { message: 'R27 Margin deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete R27 Margin', error });
     }

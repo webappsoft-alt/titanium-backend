@@ -1,4 +1,5 @@
 const DiscountedProduct = require("../models/discountedProduct");
+const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
 
 exports.getProductName = async (req, res) => {
     try {
@@ -23,7 +24,7 @@ exports.getProductName = async (req, res) => {
             }
         ]);
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             data: prod,
         });
     } catch (error) {
@@ -67,7 +68,7 @@ exports.getSelectedProducts = async (req, res) => {
         }
 
         // Return the results
-        res.status(200).json({ success: true, data });
+        sendEncryptedResponse(res, { success: true, data });
 
     } catch (error) {
         console.error("Error in getSelectedProducts:", error);
@@ -101,7 +102,7 @@ exports.getFilter = async (req, res) => {
         }
 
         // Return the results
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true,
             data,
         });
@@ -142,7 +143,7 @@ exports.getAll = async (req, res) => {
         const totalCount = await DiscountedProduct.countDocuments(query);
         const totalPages = Math.ceil(totalCount / pageSize);;
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: metalAlloys?.length > 0,
             products: metalAlloys,
             count: { totalPage: totalPages, currentPageSize: metalAlloys.length, totalCount }
@@ -167,7 +168,7 @@ exports.getById = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: !!metalAlloy,
             message: "Products Data entry retrieved successfully",
             data: metalAlloy,
@@ -186,7 +187,7 @@ exports.getUniqueAlloyFamilies = async (req, res) => {
     try {
         const alloyFamilies = await DiscountedProduct.distinct('alloyFamily', { status: 'active' }).sort({ _id: -1 });
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: alloyFamilies?.length > 0,
             alloyFamilies: alloyFamilies,
         });
@@ -227,7 +228,7 @@ exports.getByNames = async (req, res) => {
         // const alloyFamilies = await DiscountedProduct.find(query)
         //     .select(nameSelect)
         //     .sort({ _id: -1 });
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: alloyFamilies?.length > 0,
             product: alloyFamilies,
         });

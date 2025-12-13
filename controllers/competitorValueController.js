@@ -1,4 +1,5 @@
 const CompetitorMarkup = require("../models/competitor-value");
+const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
 
 // ✅ Create a new CompetitorMarkup entry
 exports.create = async (req, res) => {
@@ -11,7 +12,7 @@ exports.create = async (req, res) => {
 
         const newCompetitorMarkup = await CompetitorMarkup.findOneAndUpdate({}, { minValue, maxValue }, { new: true, upsert: true }).sort({ _id: -1 });
 
-        res.status(201).json({ success: true, message: "Competitor Markup created/updated successfully", data: newCompetitorMarkup });
+        sendEncryptedResponse(res, { success: true, message: "Competitor Markup created/updated successfully", data: newCompetitorMarkup });
     } catch (error) {
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
@@ -21,7 +22,7 @@ exports.create = async (req, res) => {
 exports.getAll = async (req, res) => {
     try {
         const CompetitorMarkupEntries = await CompetitorMarkup.findOne().sort({ _id: -1 });
-        res.status(200).json({ success: !!CompetitorMarkupEntries, data: CompetitorMarkupEntries });
+        sendEncryptedResponse(res, { success: !!CompetitorMarkupEntries, data: CompetitorMarkupEntries });
     } catch (error) {
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
@@ -34,7 +35,7 @@ exports.getById = async (req, res) => {
         if (!CompetitorMarkup) {
             return res.status(404).json({ success: false, message: "Entry not found" });
         }
-        res.status(200).json({ success: true, data: CompetitorMarkup });
+        sendEncryptedResponse(res, { success: true, data: CompetitorMarkup });
     } catch (error) {
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
@@ -55,7 +56,7 @@ exports.edit_ = async (req, res) => {
             return res.status(404).json({ success: false, message: "Entry not found" });
         }
 
-        res.status(200).json({ success: true, message: "Entry updated successfully", data: updatedCompetitorMarkup });
+        sendEncryptedResponse(res, { success: true, message: "Entry updated successfully", data: updatedCompetitorMarkup });
     } catch (error) {
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
@@ -68,7 +69,7 @@ exports.delete_ = async (req, res) => {
         if (!deletedCompetitorMarkup) {
             return res.status(404).json({ success: false, message: "Entry not found" });
         }
-        res.status(200).json({ success: true, message: "Entry deleted successfully" });
+        sendEncryptedResponse(res, { success: true, message: "Entry deleted successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }

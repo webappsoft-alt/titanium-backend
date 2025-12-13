@@ -4,6 +4,7 @@ const Price = require("../models/prices"); // Products Schema
 const Tolerances = require("../models/tolerance"); // Products Schema
 const ProductData = require("../models/productData"); // ProductsData Schema
 const mongoose = require("mongoose");
+const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
 
 exports.create = async (req, res) => {
     try {
@@ -77,7 +78,7 @@ exports.create = async (req, res) => {
         // Filter out any errors or null results
         const insertedOrUpdatedProducts = results.filter(product => product !== null);
 
-        res.status(201).json({
+        sendEncryptedResponse(res, {
             message: "Product data inserted/updated successfully",
             data: insertedOrUpdatedProducts,
             success: true
@@ -111,7 +112,7 @@ exports.getAll = async (req, res) => {
         const totalCount = await ProductData.countDocuments(query);
         const totalPages = Math.ceil(totalCount / pageSize);;
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: metalAlloys?.length > 0,
             products: metalAlloys,
             count: { totalPage: totalPages, currentPageSize: metalAlloys.length }
@@ -167,7 +168,7 @@ exports.getNavHeader = async (req, res) => {
                     }, []) // Start with an empty array accumulator
             };
         });
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: typeData.length > 0,
             products: typeData,
         });
@@ -197,7 +198,7 @@ exports.getById = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        sendEncryptedResponse(res, {
             success: true,
             message: "Product data entry retrieved successfully",
             productData: metalAlloy,
@@ -265,7 +266,7 @@ exports.edit_ = async (req, res) => {
                     message: `Product data was not found.`,
                 });
 
-        res.send({
+        sendEncryptedResponse(res, {
             success: true,
             message: `Product updated successfully`,
             data: staticPage,
@@ -294,7 +295,7 @@ exports.delete_ = async (req, res) => {
                     message: `Product data was not found.`,
                 });
 
-        res.send({
+        sendEncryptedResponse(res, {
             success: true,
             message: `Product updated successfully`,
             data: staticPage,

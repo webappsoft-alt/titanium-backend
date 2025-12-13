@@ -1,4 +1,5 @@
 const FooterStaticPage = require("../models/footerStaticPage");
+const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
 
 exports.create_ = async (req, res) => {
   try {
@@ -21,7 +22,7 @@ exports.create_ = async (req, res) => {
 
       await staticPage.save();
 
-      return res.status(200).json({
+      return sendEncryptedResponse({
         success: true,
         message: `${type} created successfully.`,
         staticPage,
@@ -43,7 +44,7 @@ exports.create_ = async (req, res) => {
       ? `${type} created successfully.`
       : `${type} updated successfully.`;
 
-    res.status(200).json({
+    sendEncryptedResponse(res, {
       success: true,
       message,
       staticPage,
@@ -75,7 +76,7 @@ exports.updateIndexOrder = async (req, res) => {
       );
     }
 
-    res.status(200).json({
+    sendEncryptedResponse(res, {
       success: true,
       message: "Order updated successfully.",
     });
@@ -125,7 +126,7 @@ exports.edit_ = async (req, res) => {
           message: `The ${type} with the given ID was not found.`,
         });
 
-    res.send({
+    sendEncryptedResponse(res, {
       success: true,
       message: `${type} updated successfully`,
       staticPage: staticPage,
@@ -144,7 +145,7 @@ exports.getAll = async (req, res) => {
   query.type = req.params.type
 
   const staticPage = req.params.type == 'faqs' ? await FooterStaticPage.find(query).sort({ orderIndex: 1 }) : await FooterStaticPage.findOne(query).sort({ _id: -1 })
-  res.send({
+  sendEncryptedResponse(res, {
     success: staticPage?.length > 0 ? true : !!staticPage,
     staticPage: staticPage,
   });
@@ -158,7 +159,7 @@ exports.getAdmin = async (req, res) => {
   }
   query.type = req.params.type
   const staticPage = req.params.type == 'faqs' ? await FooterStaticPage.find(query).sort({ orderIndex: 1 }) : await FooterStaticPage.findOne(query).sort({ _id: -1 })
-  res.send({
+  sendEncryptedResponse(res, {
     success: staticPage?.length > 0 ? true : !!staticPage,
     staticPage: staticPage,
   });
@@ -170,7 +171,7 @@ exports.getById = async (req, res) => {
   query._id = id
 
   const staticPage = await FooterStaticPage.findOne(query).sort({ _id: -1 })
-  res.send({
+  sendEncryptedResponse(res, {
     success: !!staticPage,
     staticPage: staticPage,
   });
@@ -190,7 +191,7 @@ exports.delete_ = async (req, res) => {
         });
     }
 
-    res.status(200).json({ success: true, message: "Footer Static Page deleted successfully" });
+    sendEncryptedResponse(res, { success: true, message: "Footer Static Page deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error", error: error.message });

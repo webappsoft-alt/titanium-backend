@@ -2,6 +2,7 @@ const Joi = require('joi');
 const bcrypt = require('bcryptjs');
 const { User, generateAuthToken } = require('../models/user');
 const express = require('express');
+const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 const router = express.Router();
 // const handleDelete =async ()=>{
 //   await User.findOneAndDelete().sort({_id:-1})
@@ -54,7 +55,7 @@ router.post('/', async (req, res) => {
     }
 
     const token = generateAuthToken(user._id, user.type, user?.permissions || '');
-    res.send({
+    sendEncryptedResponse(res, {
       token: token,
       user: user,
       success: true,
@@ -81,7 +82,7 @@ router.post('/admin', async (req, res) => {
   if (user.type !== 'admin') return res.status(400).send({ success: false, message: 'Invalid credentials' });
 
   const token = generateAuthToken(user._id, user.type, "admin");
-  res.send({
+  sendEncryptedResponse(res, {
     token: token,
     user: user,
     success: true
