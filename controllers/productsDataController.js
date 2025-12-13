@@ -125,6 +125,62 @@ exports.getAll = async (req, res) => {
         });
     }
 };
+exports.getSeoNavHeader = async (req, res) => {
+    try {
+        let query = { status: 'active' };
+
+        // Fetch products with pagination
+        const metalAlloys = await ProductData.find(query).select('-description -product')
+            .sort({ _id: -1 })
+            .lean();
+
+        // Get all unique types
+        const uniqueTypes = await Products.distinct("type", query);
+        // Structure the response
+        const typeData = uniqueTypes.map((type) => {
+            const label = type === "mill-product" ? "MILL PRODUCTS" : "PIPE AND FITTINGS";
+            return {
+                label: label,
+                children: metalAlloys
+                    .filter((item) => item.type === type) // Filter based on type
+                    .reduce((acc, item) => {
+                        // Check if alloyFamily already exists in the accumulator
+                        let existingGroup = acc.find(group => group.label === item.alloyFamily);
+
+                        if (!existingGroup) {
+                            // Create a new group for the alloyFamily
+                            existingGroup = {
+                                label: item.alloyFamily,
+                                value: `/product?category=${item?.alloyFamily}&type=${item?.type}`,
+                                children: []
+                            };
+                            acc.push(existingGroup);
+                        }
+
+                        // Add the matching item to the correct group
+                        existingGroup.children.push({
+                            ...item,
+                            label: item?.name,
+                            value: item?._id,
+                        });
+
+                        return acc;
+                    }, []) // Start with an empty array accumulator
+            };
+        });
+        res.status(200).json({
+            success: typeData.length > 0,
+            products: typeData,
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        });
+    }
+};
 exports.getNavHeader = async (req, res) => {
     try {
         let query = { status: 'active' };
@@ -182,6 +238,37 @@ exports.getNavHeader = async (req, res) => {
     }
 };
 
+exports.getSeoById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Determine whether the provided ID is a valid MongoDB ObjectId
+        const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { slug: id };
+
+        const metalAlloy = await ProductData.findOne(query);
+
+        if (!metalAlloy) {
+            return res.status(404).json({
+                success: false,
+                message: "Product data entry not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Product data entry retrieved successfully",
+            productData: metalAlloy,
+        });
+
+    } catch (error) {
+        console.error("Error in getById:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        });
+    }
+};
 exports.getById = async (req, res) => {
     try {
         const { id } = req.params;
