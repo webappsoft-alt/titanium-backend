@@ -129,9 +129,8 @@ router.post('/forget-password', async (req, res) => {
       websiteName: 'Titanium Industries',
     }
   })
-  sendEncryptedResponse(res, { success: true, message: 'Please check your email to reset your password', link });
+  sendEncryptedResponse(res, { success: true, message: 'Please check your email to reset your password', });
   return
-
 });
 
 router.put('/reset-password/:userId/:token', passwordauth, async (req, res) => {
@@ -163,7 +162,7 @@ router.put('/reset-password/:userId/:token', passwordauth, async (req, res) => {
       websiteName: 'Titanium Industries',
     }
   })
-  res.send(res, { success: true, message: "Password updated successfully" });
+  res.json({ success: true, message: "Password updated successfully" });
 });
 
 router.put('/update-password', passwordauth, async (req, res) => {
