@@ -20,6 +20,8 @@ const States = require('../models/states');
 const Addresses = require('../models/addresses');
 const { parseEmails } = require('../helpers/utils');
 const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
+const { findTerritoryByLocation } = require('../controllers/territoriesController')
+
 const userPath = [
   { label: '/customer/quotes', value: 'quotes' },
   { label: '/customer/orders', value: 'orders' },
@@ -331,6 +333,7 @@ router.post('/signup/customer', async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    const territoriesData = await findTerritoryByLocation({ stateID, countryID, old_state_id, old_country_id, state, country })
 
     const newUser = new User({
       password: hashedPassword,
@@ -339,6 +342,7 @@ router.post('/signup/customer', async (req, res) => {
       email,
       company,
       address,
+      assignBranch: territoriesData?.data?._id || null,
       isVerify: false,
       country, industry,
       zipCode, city, state,
