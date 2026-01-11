@@ -123,7 +123,7 @@ router.post('/forget-password', async (req, res) => {
     email: email,
     sendCode: false,
     type: 'reset-password',
-    subject: 'Password Reset',
+    subject: 'Titanium Industries - Password Reset',
     data: {
       fname: user.fname || '',
       lname: user.lname || '',
@@ -156,7 +156,7 @@ router.put('/reset-password/:userId/:token', passwordauth, async (req, res) => {
     email: user?.email,
     sendCode: false,
     type: 'password-change',
-    subject: 'Password Changed',
+    subject: 'Titanium Industries - Password Changed',
     data: {
       fname: user.fname || '',
       lname: user.lname || '',

@@ -1,9 +1,13 @@
 const moment = require("moment/moment");
-const header = () => (`<div style="text-align: center;">
+const header = () => (`<div style="">
                       <img src="http://cdn.mcauto-images-production.sendgrid.net/dfd94235f1718d83/e69b2833-f1f9-4aa1-9805-6173d9b57e5b/685x128.png" alt="Company Logo" style="max-width: 100%; margin-bottom: 5px;">
                   </div>
-                <h1 style="color: #003366; text-align: center; margin-bottom: 0px; margin-top: 10px; " >Welcome to Titanium Industries</h1>
-                <h2 style="color: #003366; text-align: center; margin-bottom: 0px; margin-top: 10px; ">Global Metal Supply & Distribution Company</h2>
+                <h1 style="color: #003366; margin-bottom: 0px; margin-top: 10px; " >Welcome to Titanium Industries</h1>
+                <h2 style="color: #003366; margin-bottom: 0px; margin-top: 10px; ">Global Metal Supply & Distribution Company</h2>
+                  `)
+const header2 = () => (`<div style="">
+                      <img src="http://cdn.mcauto-images-production.sendgrid.net/dfd94235f1718d83/e69b2833-f1f9-4aa1-9805-6173d9b57e5b/685x128.png" alt="Company Logo" style="max-width: 100%; margin-bottom: 5px;">
+                  </div>
                   `)
 function footer() {
     return `
@@ -129,7 +133,7 @@ const generateEmailTemplate = (templateType, data) => {
                 </head>
                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
                <div class="container">
-                   ${header()}
+                   ${header2()}
                     <h1>Your quote is ready.</h1>
                     <p>Please see the attached pdf for further details.</p>
                     <h3>We look forward to working with you and appreciate your business!</h3>
@@ -163,14 +167,13 @@ const generateEmailTemplate = (templateType, data) => {
                      <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Welcome to Titanium Industries</title>
+                    <title>New Sales Order - ${data?.company || 'N/A'} - Quote #$${data?.quoteNo}</title>
                     <style>${Styles()}</style>
                 </head>
                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
                <div class="container">
-                    ${header()}
                        <p class="greeting" style="margin-top: 0; margin-bottom: 10px;">
-                            Hi, a new Web Quote has been generated on <strong>${moment(data?.createdAt).format('lll')}</strong>
+                            <strong>Hi, a new Web Quote has been generated on ${moment(data?.createdAt).format('lll')}</strong>
                         </p>
     
                         <p style="margin-top: 0; margin-bottom: 10px;">
@@ -181,9 +184,9 @@ const generateEmailTemplate = (templateType, data) => {
                             <strong>Company:</strong> ${data?.company || 'N/A'}<br>
                             <strong>Customer Name:</strong> ${data?.fname} ${data?.lname || ''}<br>
                             <strong>Email:</strong> ${data?.email}<br>
-                            <strong>Phone:</strong> ${data?.phone || 'N/A'}<br>
-                            <strong>Country:</strong> ${data?.country || 'N/A'}<br>
-                            <strong>State:</strong> ${data?.state || 'N/A'}
+                            <strong>Phone:</strong> ${data?.billing?.phone || data?.shipping?.phone || data?.phone || 'N/A'}<br>
+                            <strong>Country:</strong> ${data?.country || data?.billing?.country || data?.shipping?.country || 'N/A'}<br>
+                            <strong>State:</strong> ${data?.state || data?.billing?.state || data?.shipping?.state || 'N/A'}
                         </p>
                         </div>
                     </body>
@@ -195,7 +198,7 @@ const generateEmailTemplate = (templateType, data) => {
                   <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Pending User, Titanium Industries</title>
+                    <title>New Pending "T.I. Quick Quote App Account"</title>
                     <style>${Styles()}</style>
                 </head>
                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
@@ -216,8 +219,8 @@ const generateEmailTemplate = (templateType, data) => {
 
         case "user-deactivated":
             return `
-                      <html>
-                      <head>
+                <html>
+                <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>Your account has been deactivated! Titanium Industries</title>
@@ -225,7 +228,7 @@ const generateEmailTemplate = (templateType, data) => {
                 </head>
                 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
                <div class="container">
-                        ${header()}
+                        ${header2()}
                         <p>Hi ${data?.fname || ''},</p>
                         <p>We wanted to let you know that your account associated with the email <strong>${data?.email}</strong> has been <strong>deactivated</strong> by an administrator.</p>
                         <p>You will no longer be able to log in or perform any actions within the platform.</p>
@@ -240,7 +243,7 @@ const generateEmailTemplate = (templateType, data) => {
             return `
                 <html>
                 <body style="font-family: Arial, sans-serif;">
-                   ${header()}
+                   ${header2()}
                     <p>Hi, a new Web Quote has been generated on ${moment(data?.createdAt).format('lll')}.</p>
                     <p>Please refer to the information below and the attached Quote for further details.</p>
                     <p><strong>Quote #:</strong> ${data?.quoteNo}<br>
@@ -259,12 +262,12 @@ const generateEmailTemplate = (templateType, data) => {
                  <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Pending User, Titanium Industries</title>
+                    <title>Customer Quotation, Titanium Industries</title>
                     <style>${Styles()}</style>
                 </head>
                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
                <div class="container">
-                   ${header()}
+                   ${header2()}
                     <p>Your quote is ready.</p>
                     <p>Please see the attached pdf for further details.</p>
                     <p>We look forward to working with you and appreciate your business!</p>
@@ -320,7 +323,7 @@ const generateEmailTemplate = (templateType, data) => {
                         <meta charset="UTF-8">
                         <meta http-equiv="X-UA-Compatible" content="IE=edge">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Password Changed</title>
+                        <title>Titanium Industries - Password Changed</title>
                         <style>
                             body {
                                 font-family: Arial, sans-serif;
@@ -387,7 +390,6 @@ const generateEmailTemplate = (templateType, data) => {
                         </style>
                     </head>
                 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
-                   ${header()}
                    <div class="content">
                         <p>Dear ${data?.fname} ${data?.lname || ""},</p>
                         <p>Your password was changed.</p>
@@ -403,7 +405,7 @@ const generateEmailTemplate = (templateType, data) => {
                         <meta charset="UTF-8">
                         <meta http-equiv="X-UA-Compatible" content="IE=edge">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Password Reset</title>
+                        <title>Titanium Industries - Password Reset</title>
                         <style>
                             body {
                                 font-family: Arial, sans-serif;
@@ -470,7 +472,7 @@ const generateEmailTemplate = (templateType, data) => {
                     </head>
                     <body>
                     <div class="container">
-                        ${header()}
+                        ${header2()}
                         <div class="header">
                         Reset Your Password
                         </div>
@@ -492,7 +494,6 @@ const generateEmailTemplate = (templateType, data) => {
             return `
                 <html>
                 <body style="font-family: Arial, sans-serif;">
-                   ${header()}
                     <p>Your email was changed.</p>
                     <p><a href="${data?.siteLink}">Click to visit ${data?.company || ''}</a></p>
                 </body>

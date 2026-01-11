@@ -152,11 +152,11 @@ exports.createQuotation = async (req, res) => {
                 quote, type, totalAmount, frieght, notes,
                 billing, shipping, tax, subtotal, billingAddress, shippingMethod, shippingAddress,
                 quoteNo, orderNo,
-                phone: user?.phone,
+                phone: billing?.phone || shipping?.phone || user?.phone,
                 email: user?.email,
                 company: user?.company,
-                fname: user?.fname,
-                lname: user?.lname,
+                fname: billing?.fname || shipping?.lname || user?.fname,
+                lname: billing?.lname || shipping?.lname || user?.lname,
                 isOpenQuote: false,
                 user: user._id,
             }, { new: true, upsert: true })
@@ -648,7 +648,7 @@ exports.sendQuotationEmail = [
                 email: updatedQuotation?.email,
                 type: 'sales-order',
                 data: updatedQuotation,
-                subject: `New Sales Order - ${updatedQuotation?.fname} ${updatedQuotation?.lname || ''} - ${(type == 'sales' || type == 'sales-cart') ? 'Order' : 'Quote'} #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo}`,
+                subject: `Open ${(type == 'sales' || type == 'sales-cart') ? 'Order' : 'Quote'} #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo} - Titanium Industries`,
                 attachments: [
                     {
                         filename: originalname,
