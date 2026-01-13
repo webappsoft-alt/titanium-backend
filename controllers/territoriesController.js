@@ -127,36 +127,36 @@ exports.findTerritoryByLocation = async (data) => {
         }
 
         // Country conditions
-        if (countryID) {
-            if (mongoose.Types.ObjectId.isValid(countryID)) {
-                countryConditions.push({ 'countries.countryID': new mongoose.Types.ObjectId(countryID) });
-                countryConditions.push({ 'countries._id': new mongoose.Types.ObjectId(countryID) });
-                // Also check if country ID is referenced in states.country
-                stateConditions.push({ 'states.country': countryID });
-            }
-        }
-        if (old_country_id) {
-            countryConditions.push({ 'countries.old_id': old_country_id });
-        }
-        if (country) {
-            countryConditions.push({ 'countries.name': { $regex: new RegExp(`^${country}$`, 'i') } });
-            countryConditions.push({ 'countries.iso_name': { $regex: new RegExp(`^${country}$`, 'i') } });
-        }
+        // if (countryID) {
+        //     if (mongoose.Types.ObjectId.isValid(countryID)) {
+        //         countryConditions.push({ 'countries.countryID': new mongoose.Types.ObjectId(countryID) });
+        //         countryConditions.push({ 'countries._id': new mongoose.Types.ObjectId(countryID) });
+        //         // Also check if country ID is referenced in states.country
+        //         stateConditions.push({ 'states.country': countryID });
+        //     }
+        // }
+        // if (old_country_id) {
+        //     countryConditions.push({ 'countries.old_id': old_country_id });
+        // }
+        // if (country) {
+        //     countryConditions.push({ 'countries.name': { $regex: new RegExp(`^${country}$`, 'i') } });
+        //     countryConditions.push({ 'countries.iso_name': { $regex: new RegExp(`^${country}$`, 'i') } });
+        // }
 
         // PRIORITY 1: Exact match - both state AND country match
-        if (stateConditions.length > 0 && countryConditions.length > 0) {
-            territory = await Territories.findOne({
-                status: 'active',
-                $and: [
-                    { $or: stateConditions },
-                    { $or: countryConditions }
-                ]
-            });
+        // if (stateConditions.length > 0 && countryConditions.length > 0) {
+        //     territory = await Territories.findOne({
+        //         status: 'active',
+        //         $and: [
+        //             { $or: stateConditions },
+        //             { $or: countryConditions }
+        //         ]
+        //     });
 
-            if (territory) {
-                matchType = 'exact_match';
-            }
-        }
+        //     if (territory) {
+        //         matchType = 'exact_match';
+        //     }
+        // }
 
         // PRIORITY 2: State match only
         if (!territory && stateConditions.length > 0) {
@@ -171,28 +171,28 @@ exports.findTerritoryByLocation = async (data) => {
         }
 
         // PRIORITY 3: Country match only
-        if (!territory && countryConditions.length > 0) {
-            territory = await Territories.findOne({
-                status: 'active',
-                $or: countryConditions
-            });
+        // if (!territory && countryConditions.length > 0) {
+        //     territory = await Territories.findOne({
+        //         status: 'active',
+        //         $or: countryConditions
+        //     });
 
-            if (territory) {
-                matchType = 'country_match';
-            }
-        }
+        //     if (territory) {
+        //         matchType = 'country_match';
+        //     }
+        // }
 
         // PRIORITY 4: Match by state's country reference field
-        if (!territory && countryID) {
-            territory = await Territories.findOne({
-                status: 'active',
-                'states.country': countryID
-            });
+        // if (!territory && countryID) {
+        //     territory = await Territories.findOne({
+        //         status: 'active',
+        //         'states.country': countryID
+        //     });
 
-            if (territory) {
-                matchType = 'state_country_reference';
-            }
-        }
+        //     if (territory) {
+        //         matchType = 'state_country_reference';
+        //     }
+        // }
 
         if (!territory) {
             return {
