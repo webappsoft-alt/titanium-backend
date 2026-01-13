@@ -648,7 +648,7 @@ exports.sendQuotationEmail = [
                 email: updatedQuotation?.email,
                 type: 'sales-order',
                 data: updatedQuotation,
-                subject: `Open ${(type == 'sales' || type == 'sales-cart') ? 'Order' : 'Quote'} #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo} - Titanium Industries`,
+                subject: `${(type == 'sales' || type == 'sales-cart') ? 'Open Quote ' : 'Open Quote'} #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo} - Titanium Industries`,
                 attachments: [
                     {
                         filename: originalname,
