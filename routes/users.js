@@ -1047,15 +1047,15 @@ router.put('/change/:status/:id', [auth, admin], async (req, res) => {
       data: checkUser
     })
   }
-  if (req.params.status == 'deactivated') {
-    await sendGridEmail({
-      sendCode: false,
-      subject: 'Your Account Has Been Deactivated, Titanium Industries, Inc.',
-      email: checkUser?.email,
-      type: 'user-deactivated',
-      data: checkUser
-    })
-  }
+  // if (req.params.status == 'deactivated') {
+  //   await sendGridEmail({
+  //     sendCode: false,
+  //     subject: 'Your Account Has Been Deactivated, Titanium Industries, Inc.',
+  //     email: checkUser?.email,
+  //     type: 'user-deactivated',
+  //     data: checkUser
+  //   })
+  // }
 
   sendEncryptedResponse(res, { success: true, message: 'User Updated successfully', user });
 });
