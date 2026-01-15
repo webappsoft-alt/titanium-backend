@@ -115,11 +115,12 @@ exports.updateCart = async (req, res) => {
             quote: quotation.quote,
             totalAmount,
             subtotal: totalAmount,
+            sentEmail: { finalizeBtn: false },
             tax: 0,
         });
 
         // Respond with success
-        sendEncryptedResponse(res,{ success: true, message: "Cart updated successfully", cart });
+        sendEncryptedResponse(res, { success: true, message: "Cart updated successfully", cart });
 
     } catch (error) {
         console.error("Error updating cart:", error);
@@ -141,7 +142,7 @@ exports.getCarts = async (req, res) => {
 
         // const totalCarts = await Cart.countDocuments();
 
-        sendEncryptedResponse(res,{
+        sendEncryptedResponse(res, {
             success: true,
             // totalCarts,
             // currentPage: parseInt(page),
@@ -165,7 +166,7 @@ exports.getCartById = async (req, res) => {
             return res.status(404).json({ error: "Cart not found" });
         }
 
-        sendEncryptedResponse(res,{ success: true, cart });
+        sendEncryptedResponse(res, { success: true, cart });
     } catch (error) {
         console.error("Error fetching cart:", error);
         res.status(500).json({ error: "Internal Server Error" });
@@ -209,6 +210,7 @@ exports.updateCartAndQuote = async (req, res) => {
                         quote: quotation.quote,
                         totalAmount: calculateTotalPrice(quotation.quote, quotation?.user?.discount || 0),
                         subtotal: calculateTotalPrice(quotation.quote, quotation?.user?.discount || 0),
+                        sentEmail: { finalizeBtn: false },
                         tax: 0,
                     });
                 }
@@ -222,7 +224,7 @@ exports.updateCartAndQuote = async (req, res) => {
         }
 
         // Send a single response with all results
-        sendEncryptedResponse(res,{ success: true });
+        sendEncryptedResponse(res, { success: true });
     } catch (error) {
         console.error("Error processing cart deletion:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -245,13 +247,14 @@ exports.deleteCart = async (req, res) => {
                 quote: quotation.quote,
                 totalAmount: calculateTotalPrice(quotation.quote, quotation?.user?.discount || 0),
                 subtotal: calculateTotalPrice(quotation.quote, quotation?.user?.discount || 0),
+                sentEmail: { finalizeBtn: false },
                 tax: 0,
             });
         }
 
         await Cart.findByIdAndDelete(id);
 
-        sendEncryptedResponse(res,{ success: true, message: "Cart deleted successfully" });
+        sendEncryptedResponse(res, { success: true, message: "Cart deleted successfully" });
     } catch (error) {
         console.error("Error deleting cart:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });

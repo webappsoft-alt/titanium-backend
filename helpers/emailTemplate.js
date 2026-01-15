@@ -141,6 +141,25 @@ const generateEmailTemplate = (templateType, data) => {
                 </div>          
                 </body>
                 </html>`;
+        case "open-quote":
+            return `
+                <html>
+                 <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Welcome to Titanium Industries</title>
+                    <style>${Styles()}</style>
+                </head>
+               <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
+               <div class="container">
+                   ${header2()}
+                    <h1>You Have An Open Quote</h1>
+                    <p>Please see the attached open quote and proceed to finalize your quote with further details. </p>
+                    <h3>We look forward to working with you and appreciate your business!</h3>
+                    ${footer()}
+                </div>          
+                </body>
+                </html>`;
 
         case "sales-order-prev":
             return `
@@ -161,6 +180,36 @@ const generateEmailTemplate = (templateType, data) => {
                 </body>
                 </html>`;
 
+        case "new-open-quotation":
+            return `
+                    <html>
+                     <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>New Web Quote Generated - ${data?.company || data?.user?.company || 'N/A'} - Quote #$${data?.quoteNo}</title>
+                    <style>${Styles()}</style>
+                </head>
+               <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
+               <div class="container">
+                       <p class="greeting" style="margin-top: 0; margin-bottom: 10px;">
+                            <strong>Hi, a new Web Quote has been generated on ${moment(data?.createdAt).format('lll')}</strong>
+                        </p>
+    
+                        <p style="margin-top: 0; margin-bottom: 10px;">
+                            Please refer to the information below and the attached Quote for further details.
+                        </p>
+                        <p>
+                            <strong>Quote #:</strong> ${data?.quoteNo}<br>
+                            <strong>Company:</strong> ${data?.company || data?.user?.company || 'N/A'}<br>
+                            <strong>Customer Name:</strong> ${data?.fname} ${data?.lname || ''}<br>
+                            <strong>Email:</strong> ${data?.email}<br>
+                            <strong>Phone:</strong> ${data?.billing?.phone || data?.shipping?.phone || data?.phone || 'N/A'}<br>
+                            <strong>Country:</strong> ${data?.country || data?.billing?.country || data?.shipping?.country || 'N/A'}<br>
+                            <strong>State:</strong> ${data?.state || data?.billing?.state || data?.shipping?.state || 'N/A'}
+                        </p>
+                        </div>
+                    </body>
+                    </html>`;
         case "new-quotation":
             return `
                     <html>

@@ -16,6 +16,10 @@ router.get('/stats', [auth, admin], controller.getQuotationStats);
 router.get('/generate-report', [auth, admin], controller.generateExcel);
 router.put('/edit/:id', [auth, admin], controller.updateQuotation);
 router.put('/status/:id', [auth, admin], controller.updateStatus);
+
+router.post('/finalize-btn/create', auth, controller.createOpenQuotation);
+router.put('/finalize-btn/:id', auth, controller.sendOpenQuotationEmail);
+
 router.put('/resend/:id/:type', auth, controller.sendQuotationEmail);
 router.delete('/:id', [auth, admin], controller.deleteQuotation);
 

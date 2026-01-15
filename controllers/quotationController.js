@@ -104,6 +104,8 @@ const createQuot = async (userId, quotationData, type) => {
         if (existingQuotation) {
             existingQuotation.type = type;
             existingQuotation.quote = quote;
+            existingQuotation.sentEmail.finalizeBtn = false;
+            existingQuotation.createdTS = Date.now();
             existingQuotation.totalAmount = totalAmountUser
             await existingQuotation.save();
             if (type != 'open-quote') {
@@ -123,6 +125,10 @@ const createQuot = async (userId, quotationData, type) => {
             lname: lname || user?.lname,
             zipCode, state, city, country, address2, address1,
             quoteNo, orderNo,
+            sentEmail: {
+                finalizeBtn: false,
+            },
+            createdTS: Date.now(),
             isOpenQuote: type == 'open-quote' ? true : false,
             user: user._id,
         });
@@ -137,6 +143,115 @@ const createQuot = async (userId, quotationData, type) => {
         throw new Error(error.message);
     }
 };
+exports.createOpenQuotation = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { quote, totalAmount, subtotal, tax, notes } = req.body;
+
+        // Load user + shipping/billing in ONE call
+        const user = await User.findOne({
+            _id: userId,
+            status: 'active',
+        })
+            .populate('shippingAddress billingAddress')
+            .lean();
+
+        if (!user) {
+            return res
+                .status(400)
+                .json({ success: false, message: 'User not found' });
+        }
+
+        const billing = user.billingAddress || null;
+        const shipping = user.shippingAddress || null;
+
+        // Generate both numbers at once
+        // Look for an existing pending Open Quote first
+        const existing = await Quotation.findOne({
+            user: userId,
+            type: 'open-quote',
+            status: 'pending',
+        }).lean();
+        const isSendEmailFinalizeBtn = existing?.sentEmail?.finalizeBtn || false
+        if (isSendEmailFinalizeBtn || quote?.length == 0) {
+            return sendEncryptedResponse(res, {
+                success: false,
+                quotation: existing,
+            });
+        }
+        // Generate numbers only if missing
+        let quoteNo, orderNo;
+
+        if (existing) {
+            quoteNo = existing.quoteNo;
+            orderNo = existing.orderNo;
+        } else {
+            [quoteNo, orderNo] = await Promise.all([
+                generateUniqueQuoteNo(Quotation),
+                generateUniqueQuoteNo(Quotation, 'ORD'),
+            ]);
+        }
+
+
+        const pick = (a, b, c) => a ?? b ?? c;
+
+        const newData = {
+            quote,
+            totalAmount,
+            subtotal,
+            billing,
+            shipping,
+            tax,
+            notes,
+            isOpenQuote: true,
+
+            quoteNo,
+            orderNo,
+
+            phone: pick(billing?.phone, shipping?.phone, user.phone),
+            email: user.email,
+            company: user.company,
+            fname: pick(billing?.fname, shipping?.fname, user.fname),
+            lname: pick(billing?.lname, shipping?.lname, user.lname),
+
+            user: user._id,
+            createdTS: Date.now(),
+            type: 'open-quote',
+            status: 'pending',
+        };
+
+        // Upsert user’s pending quotation
+        const saved = await Quotation.findOneAndUpdate(
+            { user: userId, type: 'open-quote', status: 'pending' },
+            newData,
+            { new: true, upsert: true }
+        );
+
+        // Populate once (clean + selective)
+        const quotation = await Quotation.findById(saved._id)
+            .populate({
+                path: 'user',
+                select: '-password',
+                populate: [
+                    { path: 'billingAddress' },
+                    { path: 'shippingAddress' },
+                ],
+            })
+            .lean();
+
+        return sendEncryptedResponse(res, {
+            success: true,
+            quotation,
+            message: 'Order Created Successfully',
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+        });
+    }
+};
+
 exports.createQuotation = async (req, res) => {
     try {
         const userId = req.user._id
@@ -145,21 +260,55 @@ exports.createQuotation = async (req, res) => {
         if (!user) {
             return res.status(400).json({ success: false, message: "User not found" });
         }
-        const quoteNo = await generateUniqueQuoteNo(Quotation);
-        const orderNo = await generateUniqueQuoteNo(Quotation, 'ORD');
-        const existingQuotation = await Quotation.findOneAndReplace({ user: userId, type: 'open-quote', status: 'pending' },
-            {
-                quote, type, totalAmount, frieght, notes,
-                billing, shipping, tax, subtotal, billingAddress, shippingMethod, shippingAddress,
-                quoteNo, orderNo,
-                phone: billing?.phone || shipping?.phone || user?.phone,
-                email: user?.email,
-                company: user?.company,
-                fname: billing?.fname || shipping?.lname || user?.fname,
-                lname: billing?.lname || shipping?.lname || user?.lname,
-                isOpenQuote: false,
-                user: user._id,
-            }, { new: true, upsert: true })
+        // Run both number generations at the same time
+        const [quoteNo, orderNo] = await Promise.all([
+            generateUniqueQuoteNo(Quotation),
+            generateUniqueQuoteNo(Quotation, 'ORD'),
+        ]);
+
+        // Check if a pending open quotation already exists
+        const existingQuotation = await Quotation.findOne({
+            user: userId,
+            type: 'open-quote',
+            status: 'pending',
+        }).lean();
+
+        const pick = (a, b, c) => a ?? b ?? c; // small helper (optional)
+
+        const newData = {
+            quote,
+            type,
+            totalAmount,
+            frieght,
+            notes,
+            billing,
+            shipping,
+            tax,
+            subtotal,
+            billingAddress,
+            shippingMethod,
+            shippingAddress,
+
+            quoteNo: existingQuotation?.quoteNo ?? quoteNo,
+            orderNo: existingQuotation?.orderNo ?? orderNo,
+
+            phone: pick(billing?.phone, shipping?.phone, user?.phone),
+            email: user.email,
+            company: user.company,
+            fname: pick(billing?.fname, shipping?.fname, user?.fname),
+            lname: pick(billing?.lname, shipping?.lname, user?.lname),
+
+            isOpenQuote: false,
+            isSalesOrder: true,
+            user: user._id,
+            createdTS: Date.now(),
+        };
+
+        const savedQuotation = await Quotation.findOneAndReplace(
+            { user: userId, type: 'open-quote', status: 'pending' },
+            newData,
+            { new: true, upsert: true }
+        );
         // Helper function to extract address fields
         const extractAddressFields = (addressData) => {
             const {
@@ -234,7 +383,7 @@ exports.createQuotation = async (req, res) => {
             }
         }
         await Cart.deleteMany({ user: userId });
-        const quotation = await Quotation.findById(existingQuotation._id)
+        const quotation = await Quotation.findById(savedQuotation._id)
             .populate({
                 path: 'user',
                 select: '-password',
@@ -606,6 +755,117 @@ exports.updateStatus = async (req, res) => {
     }
 };
 
+exports.sendOpenQuotationEmail = [
+    upload.single('pdf'),
+    async (req, res) => {
+        try {
+            const { id: quotationId } = req.params;
+            const { type } = req.body;
+            const { originalname, buffer } = req.file ?? {};
+
+            // ──────────────────────────────
+            // 1) Fetch quotation + user in parallel
+            // ──────────────────────────────
+            const quotationPromise = Quotation.findById(quotationId)
+                .populate('user')
+                .lean();
+
+            const quotation = await quotationPromise;
+            if (!quotation) {
+                return res.status(404).json({ success: false, message: 'Quotation not found' });
+            }
+
+            // Common email payload base
+            const attachment = [{ filename: originalname, content: buffer }];
+
+            // ──────────────────────────────
+            // 2) Send email to customer
+            // ──────────────────────────────
+            await sendGridEmail({
+                sendCode: false,
+                email: quotation?.email || quotationPromise?.user?.email,
+                type: 'open-quote',
+                data: quotation,
+                subject: `Open Quote - Titanium Industries`,
+                attachments: attachment,
+            });
+            if (type == 'send-to-all') {
+                const userPromise = User.findById(quotation.user?._id)
+                    .select('salesRep assignBranch accountManager regionalManager')
+                    .populate('accountManager', 'email type permissions')
+                    .populate('salesRep', 'email type permissions')
+                    .populate('regionalManager', 'email type permissions')
+                    .lean();
+
+                const user = await userPromise;
+                const permission =
+                    (user?.regionalManager?.permissions ||
+                        user?.accountManager?.permissions ||
+                        user?.salesRep?.permissions) === 'admin'
+                        ? 'Please approve or assign a representative.'
+                        : 'Please follow up with the customer.';
+                // ──────────────────────────────
+                // 3) Notify role-based contacts
+                // ──────────────────────────────
+                const roleEmails = [
+                    user?.accountManager?.email,
+                    user?.salesRep?.email,
+                    user?.regionalManager?.email,
+                ].filter(Boolean);
+
+                const uniqueRoleEmails = [...new Set(roleEmails)];
+
+                const rolePayload = {
+                    sendCode: false,
+                    type: 'new-open-quotation',
+                    data: { ...quotation, permission },
+                    subject: `New Web Quote Generated - ${quotation?.billing?.country || quotation?.user?.country} - Quote #${quotation?.quoteNo}`,
+                    attachments: attachment,
+                };
+
+                for (const email of uniqueRoleEmails) {
+                    await sendGridEmail({ ...rolePayload, email });
+                }
+
+                // ──────────────────────────────
+                // 4) Notify branch + titanium users
+                // ──────────────────────────────
+                const assignBranchEmails = user.assignBranch
+                    ? (
+                        await User.find({
+                            type: 'sub-admin',
+                            routing: { $in: user.assignBranch },
+                        })
+                            .select('email')
+                            .lean()
+                    ).map(u => u.email)
+                    : [];
+
+                const titaniumUsers = await handleTitaniumUsersEmail();
+
+                const uniqueTitaniumEmails = [...new Set([...titaniumUsers, ...assignBranchEmails])];
+
+                await sendGridEmail({
+                    sendCode: false,
+                    titaniumUsers: uniqueTitaniumEmails,
+                    type: 'new-open-quotation',
+                    data: { ...quotation, permission },
+                    subject: rolePayload.subject,
+                    attachments: attachment,
+                });
+            }
+            const updateQuotation = await Quotation.findByIdAndUpdate(quotationId, { $set: { sentEmail: { finalizeBtn: true } } })
+            return sendEncryptedResponse(res, {
+                success: true,
+                message: 'Email sent successfully',
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: err.message });
+        }
+    },
+];
+
 exports.sendQuotationEmail = [
     upload.single('pdf'), // Handle file upload
     async (req, res) => {
@@ -648,7 +908,7 @@ exports.sendQuotationEmail = [
                 email: updatedQuotation?.email,
                 type: 'sales-order',
                 data: updatedQuotation,
-                subject: `${(type == 'sales' || type == 'sales-cart') ? 'Open Quote ' : 'Open Quote'} #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo} - Titanium Industries`,
+                subject: `Your Quote is Ready #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo} - Titanium Industries`,
                 attachments: [
                     {
                         filename: originalname,

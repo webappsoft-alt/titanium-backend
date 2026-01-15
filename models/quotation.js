@@ -159,6 +159,11 @@ const schema_ = new mongoose.Schema({
     isOpenQuote: Boolean,
     isSalesOrder: { type: Boolean, default: false },
     closedReason: String,
+    sentEmail:{
+        finalizeBtn: { type: Boolean, default: false },
+        proceedToBtn: { type: Boolean, default: false },
+        nextSendTime: Date,
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'user',
@@ -167,6 +172,9 @@ const schema_ = new mongoose.Schema({
     type: {
         type: String,
         enum: ['cart', 'regular', 'open-quote']
+    },
+    createdTS: {
+        type: Date,
     },
     status: {
         type: String,
