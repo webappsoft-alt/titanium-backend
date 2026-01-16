@@ -161,7 +161,9 @@ const schema_ = new mongoose.Schema({
     closedReason: String,
     sentEmail:{
         finalizeBtn: { type: Boolean, default: false },
+        isAutoSendQuote: { type: Boolean, default: false },
         proceedToBtn: { type: Boolean, default: false },
+        saveFilePath: { type: String, default: '' },
         nextSendTime: Date,
     },
     user: {

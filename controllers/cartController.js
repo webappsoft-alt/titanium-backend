@@ -115,7 +115,7 @@ exports.updateCart = async (req, res) => {
             quote: quotation.quote,
             totalAmount,
             subtotal: totalAmount,
-            sentEmail: { finalizeBtn: false },
+            sentEmail: { finalizeBtn: false, isAutoSendQuote: false },
             tax: 0,
         });
 
@@ -131,27 +131,34 @@ exports.updateCart = async (req, res) => {
 // Get all carts (with pagination)
 exports.getCarts = async (req, res) => {
     try {
-        const userId = req.user._id
-        const { page = 1, limit = 20 } = req.query;
-        const skip = (page - 1) * limit;
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
 
-        const carts = await Cart.find({ user: userId })
-            .sort({ _id: -1 })
-        // .skip(skip)
-        // .limit(parseInt(limit));
+        // Run DB queries in parallel (no skip/limit now)
+        const [carts, quotation] = await Promise.all([
+            Cart.find({ user: userId })
+                .sort({ _id: -1 })
+                .lean(),
 
-        // const totalCarts = await Cart.countDocuments();
+            Quotation.findOne({
+                user: userId,
+                status: 'pending',
+                type: 'open-quote'
+            })
+                .sort({ _id: -1 })
+                .lean(),
+        ]);
 
-        sendEncryptedResponse(res, {
+        return sendEncryptedResponse(res, {
             success: true,
-            // totalCarts,
-            // currentPage: parseInt(page),
-            // totalPages: Math.ceil(totalCarts / limit),
-            carts
+            quotation,
+            carts,
         });
     } catch (error) {
         console.error("Error fetching carts:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 };
 
@@ -210,7 +217,7 @@ exports.updateCartAndQuote = async (req, res) => {
                         quote: quotation.quote,
                         totalAmount: calculateTotalPrice(quotation.quote, quotation?.user?.discount || 0),
                         subtotal: calculateTotalPrice(quotation.quote, quotation?.user?.discount || 0),
-                        sentEmail: { finalizeBtn: false },
+                        sentEmail: { finalizeBtn: false, isAutoSendQuote: false },
                         tax: 0,
                     });
                 }
@@ -247,7 +254,7 @@ exports.deleteCart = async (req, res) => {
                 quote: quotation.quote,
                 totalAmount: calculateTotalPrice(quotation.quote, quotation?.user?.discount || 0),
                 subtotal: calculateTotalPrice(quotation.quote, quotation?.user?.discount || 0),
-                sentEmail: { finalizeBtn: false },
+                sentEmail: { finalizeBtn: false, isAutoSendQuote: false },
                 tax: 0,
             });
         }

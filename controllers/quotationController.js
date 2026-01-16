@@ -25,6 +25,37 @@ const handleTitaniumUsersEmail = async () => {
     }
 }
 
+// Delete scheduled PDF file and reset quotation sentEmail fields
+const cleanupScheduledQuotationEmail = async (quotationId) => {
+    try {
+        const quotation = await Quotation.findById(quotationId).lean();
+        if (!quotation) {
+            return { success: false, message: 'Quotation not found' };
+        }
+
+        const filePath = quotation.sentEmail?.saveFilePath;
+
+        // Delete the PDF file if it exists
+        if (filePath && fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        // Reset proceedToBtn, nextSendTime, and saveFilePath
+        await Quotation.findByIdAndUpdate(quotationId, {
+            $set: {
+                'sentEmail.proceedToBtn': false,
+                'sentEmail.nextSendTime': null,
+                'sentEmail.saveFilePath': '',
+            }
+        });
+
+        return { success: true, message: 'Scheduled email cleanup completed' };
+    } catch (err) {
+        console.error(`Error cleaning up scheduled quotation email for ${quotationId}:`, err);
+        return { success: false, message: err.message };
+    }
+};
+
 const handleGetUser = async ({ key, userId }) => {
     const subAdmin = await User.findById(userId)
         .select('routing branch')
@@ -105,6 +136,7 @@ const createQuot = async (userId, quotationData, type) => {
             existingQuotation.type = type;
             existingQuotation.quote = quote;
             existingQuotation.sentEmail.finalizeBtn = false;
+            existingQuotation.sentEmail.isAutoSendQuote = false;
             existingQuotation.createdTS = Date.now();
             existingQuotation.totalAmount = totalAmountUser
             await existingQuotation.save();
@@ -127,6 +159,7 @@ const createQuot = async (userId, quotationData, type) => {
             quoteNo, orderNo,
             sentEmail: {
                 finalizeBtn: false,
+                isAutoSendQuote: false,
             },
             createdTS: Date.now(),
             isOpenQuote: type == 'open-quote' ? true : false,
@@ -238,12 +271,12 @@ exports.createOpenQuotation = async (req, res) => {
                 ],
             })
             .lean();
-
-        return sendEncryptedResponse(res, {
+        sendEncryptedResponse(res, {
             success: true,
             quotation,
             message: 'Order Created Successfully',
         });
+        await cleanupScheduledQuotationEmail(saved._id)
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -662,7 +695,7 @@ exports.getQuotationByUserId = async (req, res) => {
 };
 exports.getOpenQuotationByUserId = async (req, res) => {
     try {
-        const quotation = await Quotation.findOne({ user: req.params.id, status: { $in: ['pending'] }, type: 'open-quote' });
+        const quotation = await Quotation.findOne({ user: req.params.id, status: 'pending', type: 'open-quote' });
 
         sendEncryptedResponse(res, { success: !!quotation, data: quotation });
     } catch (error) {
@@ -1006,6 +1039,188 @@ exports.deleteQuotation = async (req, res) => {
         sendEncryptedResponse(res, { success: true, message: "Quotation deleted successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Save PDF file locally and schedule email for later
+exports.savePdfAndScheduleEmail = [
+    upload.single('pdf'),
+    async (req, res) => {
+        try {
+            const { quotationId } = req.body;
+            const { buffer } = req.file ?? {};
+
+            if (!quotationId) {
+                return res.status(400).json({ success: false, message: 'quotationId is required' });
+            }
+
+            if (!buffer) {
+                return res.status(400).json({ success: false, message: 'PDF file is required' });
+            }
+
+            const quotation = await Quotation.findById(quotationId).lean();
+            if (!quotation) {
+                return res.status(404).json({ success: false, message: 'Quotation not found' });
+            }
+            if (quotation.sentEmail.isAutoSendQuote) {
+                return sendEncryptedResponse(res, { success: false, message: 'Email Sent' });
+            }
+
+            // Create uploads directory if it doesn't exist
+            const uploadsDir = path.join(__dirname, '..', 'uploads', 'quotations');
+            if (!fs.existsSync(uploadsDir)) {
+                fs.mkdirSync(uploadsDir, { recursive: true });
+            }
+
+            // Save PDF file with quotationId as filename
+            const filePath = path.join(uploadsDir, `${quotationId}.pdf`);
+            fs.writeFileSync(filePath, buffer);
+
+            // Set nextSendTime to 3 hours from now
+            const nextSendTime = new Date(Date.now() + 3 * 60 * 60 * 1000);
+
+            // Update quotation with proceedToBtn, saveFilePath, and nextSendTime
+            await Quotation.findByIdAndUpdate(quotationId, {
+                $set: {
+                    'sentEmail.proceedToBtn': true,
+                    'sentEmail.isAutoSendQuote': false,
+                    'sentEmail.saveFilePath': filePath,
+                    'sentEmail.nextSendTime': nextSendTime,
+                }
+            });
+
+            return sendEncryptedResponse(res, {
+                success: true,
+                message: 'PDF saved and email scheduled successfully',
+                nextSendTime,
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: err.message });
+        }
+    },
+];
+
+// Cron job handler to process scheduled quotation emails
+exports.processScheduledQuotationEmails = async () => {
+    try {
+        const now = new Date();
+
+        // Find quotations where proceedToBtn is true and nextSendTime has passed
+        const quotations = await Quotation.find({
+            'sentEmail.proceedToBtn': true,
+            'sentEmail.isAutoSendQuote': false,
+            'sentEmail.nextSendTime': { $lte: now },
+        }).populate('user').lean();
+
+        for (const quotation of quotations) {
+            try {
+                const filePath = quotation.sentEmail?.saveFilePath;
+
+                // Check if file exists
+                if (!filePath || !fs.existsSync(filePath)) {
+                    console.error(`PDF file not found for quotation ${quotation._id}`);
+                    continue;
+                }
+
+                // Read the PDF file
+                const pdfBuffer = fs.readFileSync(filePath);
+                const attachment = [{
+                    filename: `${quotation._id}.pdf`,
+                    content: pdfBuffer,
+                }];
+
+                // Send email to customer
+                await sendGridEmail({
+                    sendCode: false,
+                    email: quotation?.email || quotation?.user?.email,
+                    type: 'open-quote',
+                    data: quotation,
+                    subject: `Open Quote - Titanium Industries`,
+                    attachments: attachment,
+                });
+
+                // Get user with populated fields for role-based emails
+                const user = await User.findById(quotation.user?._id)
+                    .select('salesRep assignBranch accountManager regionalManager')
+                    .populate('accountManager', 'email type permissions')
+                    .populate('salesRep', 'email type permissions')
+                    .populate('regionalManager', 'email type permissions')
+                    .lean();
+
+                const permission =
+                    (user?.regionalManager?.permissions ||
+                        user?.accountManager?.permissions ||
+                        user?.salesRep?.permissions) === 'admin'
+                        ? 'Please approve or assign a representative.'
+                        : 'Please follow up with the customer.';
+
+                // Notify role-based contacts
+                const roleEmails = [
+                    user?.accountManager?.email,
+                    user?.salesRep?.email,
+                    user?.regionalManager?.email,
+                ].filter(Boolean);
+
+                const uniqueRoleEmails = [...new Set(roleEmails)];
+
+                const rolePayload = {
+                    sendCode: false,
+                    type: 'new-open-quotation',
+                    data: { ...quotation, permission },
+                    subject: `New Web Quote Generated - ${quotation?.billing?.country || quotation?.user?.country} - Quote #${quotation?.quoteNo}`,
+                    attachments: attachment,
+                };
+
+                for (const email of uniqueRoleEmails) {
+                    await sendGridEmail({ ...rolePayload, email });
+                }
+
+                // Notify branch + titanium users
+                const assignBranchEmails = user?.assignBranch
+                    ? (
+                        await User.find({
+                            type: 'sub-admin',
+                            routing: { $in: user.assignBranch },
+                        })
+                            .select('email')
+                            .lean()
+                    ).map(u => u.email)
+                    : [];
+
+                const titaniumUsers = await handleTitaniumUsersEmail();
+
+                const uniqueTitaniumEmails = [...new Set([...titaniumUsers, ...assignBranchEmails])];
+
+                await sendGridEmail({
+                    sendCode: false,
+                    titaniumUsers: uniqueTitaniumEmails,
+                    type: 'new-open-quotation',
+                    data: { ...quotation, permission },
+                    subject: rolePayload.subject,
+                    attachments: attachment,
+                });
+
+                // Delete the PDF file
+                fs.unlinkSync(filePath);
+
+                // Reset proceedToBtn and nextSendTime
+                await Quotation.findByIdAndUpdate(quotation._id, {
+                    $set: {
+                        'sentEmail.proceedToBtn': false,
+                        'sentEmail.isAutoSendQuote': true,
+                        'sentEmail.nextSendTime': null,
+                        'sentEmail.saveFilePath': '',
+                    }
+                });
+
+                console.log(`Scheduled email sent for quotation ${quotation._id}`);
+            } catch (err) {
+                console.error(`Error processing quotation ${quotation._id}:`, err);
+            }
+        }
+    } catch (err) {
+        console.error('Error in processScheduledQuotationEmails:', err);
     }
 };
 

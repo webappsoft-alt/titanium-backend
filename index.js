@@ -55,6 +55,10 @@ require('./startup/prod')(app);
 require('./startup/validation')();
 require('./startup/routes')(app);
 
+// Start cron jobs
+const { startQuotationEmailCron } = require('./cron/quotationEmailCron');
+startQuotationEmailCron();
+
 const port = process.env.PORT || 5022;
 server.listen(port, '0.0.0.0', () => logger.info(`Listening on port  ${port}...`));
 
