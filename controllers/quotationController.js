@@ -1112,7 +1112,9 @@ exports.processScheduledQuotationEmails = async () => {
             'sentEmail.isAutoSendQuote': false,
             'sentEmail.nextSendTime': { $lte: now },
         }).populate('user').lean();
-
+        if (quotations?.length == 0) {
+            return
+        }
         for (const quotation of quotations) {
             try {
                 const filePath = quotation.sentEmail?.saveFilePath;
