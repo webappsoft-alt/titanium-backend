@@ -918,7 +918,7 @@ router.put('/update-user/:id?', auth, async (req, res) => {
   const {
     fname, lname, phone, password,
     address,
-    industry, otherIndustry, billingAddress, company, assignBranch, isCompetitor, discount, regionalManager, salesRep, accountManager, stratixAccount,
+    industry, otherIndustry, billingAddress, company, assignBranch, customerStatus, isCompetitor, discount, regionalManager, salesRep, accountManager, stratixAccount,
     zipCode, city,
     state, stateID, country, countryID, old_state_id, old_country_id
   } = req.body;
@@ -940,6 +940,7 @@ router.put('/update-user/:id?', auth, async (req, res) => {
       company,
       otherIndustry, billingAddress,
       stratixAccount,
+      customerStatus,
       zipCode, city, state, stateID, country, countryID, old_state_id, old_country_id
     }).filter(([key, value]) => value != null)
   );

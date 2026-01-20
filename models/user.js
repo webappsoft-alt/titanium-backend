@@ -83,6 +83,11 @@ const userSchema = new mongoose.Schema({
     minlength: 0,
     maxlength: 4,
   },
+  customerStatus: {
+    type: String,
+    default: '',
+    enum: ['C', 'L', 'P', "I", "3MD", '6MD', '']
+  },
   status: {
     type: String,
     default: 'inactive',

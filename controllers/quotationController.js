@@ -613,7 +613,7 @@ exports.generateExcel = async (req, res) => {
         const quotations = await Quotation.find(query).sort({ _id: -1 })
             .populate({
                 path: 'user',
-                select: '_id stratixAccount assignBranch accountManager salesRep regionalManager',
+                select: '_id stratixAccount customerStatus assignBranch accountManager salesRep regionalManager',
                 populate: [
                     { path: 'assignBranch', select: 'code' },
                     { path: 'accountManager', select: 'email' },
