@@ -261,13 +261,18 @@ router.post('/verify-otp/registration', async (req, res) => {
         type: 'user-registration',
         data: user
       })
-      // Get distinct territory IDs that match country and state
-      const territoryIds = await Territories.distinct('_id', {
-        $or: [
-          { 'countries.countryID': user?.countryID },
-          { 'states.stateID': user.stateID }
-        ]
-      });
+      const assignedBranchId = user?.assignBranch ?? null;
+
+      const territoryQuery = assignedBranchId
+        ? { _id: assignedBranchId }
+        : {
+          $or: [
+            { 'states.stateID': user.stateID },
+            { 'states.old_id': user.old_state_id },
+          ],
+        };
+
+      const territoryIds = await Territories.distinct('_id', territoryQuery);
 
       const usersList = territoryIds?.length
         ? await User.find({
