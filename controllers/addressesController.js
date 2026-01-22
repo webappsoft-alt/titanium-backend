@@ -90,87 +90,96 @@ exports.create_ = async (req, res) => {
         });
     }
 }
+// Helper function to extract address fields
+const extractAddressFields = (addressData, userId) => {
+    const {
+        fname,
+        lname,
+        old_state_id,
+        old_country_id,
+        address2,
+        address1,
+        city,
+        zipCode,
+        country_id,
+        state_id,
+        phone,
+        company,
+        countryID,
+        state,
+        stateID,
+        country
+    } = addressData;
+
+    return {
+        fname,
+        lname,
+        old_state_id,
+        old_country_id,
+        address2,
+        address1,
+        city,
+        zipCode,
+        country_id,
+        state_id,
+        phone,
+        company,
+        countryID,
+        state,
+        country,
+        stateID,
+        user: userId
+    };
+};
+
+async function upsertUserAddress({
+    userId,
+    type, // 'billingAddress' | 'shippingAddress'
+    addressPayload,
+    currentAddressId
+}) {
+    if (!addressPayload || Object.keys(addressPayload).length === 0) return null;
+
+    const addressData = extractAddressFields(addressPayload, userId);
+
+    if (!Object.keys(addressData).length) return null;
+
+    let addressDoc;
+
+    if (currentAddressId) {
+        addressDoc = await Addresses.findByIdAndUpdate(
+            currentAddressId,
+            { $set: addressData },
+            { new: true }
+        );
+    } else {
+        addressDoc = await Addresses.create(addressData);
+        await User.findByIdAndUpdate(userId, {
+            $set: { [type]: addressDoc._id }
+        });
+    }
+
+    return addressDoc;
+}
 exports.update = async (req, res) => {
     try {
         const { billing, shipping } = req.body;
         const userId = req.params.id;
 
-        let billingAddress = null;
-        let shippingAddress = null;
-
-        // Helper function to extract address fields
-        const extractAddressFields = (addressData) => {
-            const {
-                fname,
-                lname,
-                old_state_id,
-                old_country_id,
-                address2,
-                address1,
-                city,
-                zipCode,
-                country_id,
-                state_id,
-                phone,
-                company,
-                countryID,
-                state,
-                stateID,
-                country
-            } = addressData;
-
-            return {
-                fname,
-                lname,
-                old_state_id,
-                old_country_id,
-                address2,
-                address1,
-                city,
-                zipCode,
-                country_id,
-                state_id,
-                phone,
-                company,
-                countryID,
-                state,
-                country,
-                stateID,
-                user: userId
-            };
-        };
-
         // Handle billing address
-        if (billing) {
-            const billingData = extractAddressFields(billing);
+        const billingAddress = await upsertUserAddress({
+            userId,
+            type: 'billingAddress',
+            addressPayload: billing,
+            currentAddressId: billing._id
+        });
 
-            if (billing._id) {
-                billingAddress = await Addresses.findByIdAndUpdate(
-                    billing._id,
-                    billingData,
-                    { new: true }
-                );
-            } else {
-                billingAddress = await Addresses.create(billingData);
-                await User.findByIdAndUpdate(userId, { billingAddress: billingAddress?._id })
-            }
-        }
-
-        // Handle shipping address
-        if (shipping) {
-            const shippingData = extractAddressFields(shipping);
-
-            if (shipping._id) {
-                shippingAddress = await Addresses.findByIdAndUpdate(
-                    shipping._id,
-                    shippingData,
-                    { new: true }
-                );
-            } else {
-                shippingAddress = await Addresses.create(shippingData);
-                await User.findByIdAndUpdate(userId, { shippingAddress: shippingAddress?._id })
-            }
-        }
+        const shippingAddress = await upsertUserAddress({
+            userId,
+            type: 'shippingAddress',
+            addressPayload: shipping,
+            currentAddressId: shipping._id
+        });
 
         sendEncryptedResponse(res, {
             success: true,

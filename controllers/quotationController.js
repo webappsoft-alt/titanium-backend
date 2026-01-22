@@ -284,6 +284,77 @@ exports.createOpenQuotation = async (req, res) => {
         });
     }
 };
+// Helper function to extract address fields
+const extractAddressFields = (addressData, userId) => {
+    const {
+        fname,
+        lname,
+        old_state_id,
+        old_country_id,
+        address2,
+        address1,
+        city,
+        zipCode,
+        country_id,
+        state_id,
+        phone,
+        company,
+        countryID,
+        state,
+        stateID,
+        country,
+    } = addressData;
+
+    return {
+        fname,
+        lname,
+        old_state_id,
+        old_country_id,
+        address2,
+        address1,
+        city,
+        zipCode,
+        country_id,
+        state_id,
+        phone,
+        company,
+        countryID,
+        state,
+        stateID,
+        country,
+        user: userId
+    };
+};
+
+async function upsertUserAddress({
+    userId,
+    type, // 'billingAddress' | 'shippingAddress'
+    addressPayload,
+    currentAddressId
+}) {
+    if (!addressPayload || Object.keys(addressPayload).length === 0) return null;
+
+    const addressData = extractAddressFields(addressPayload, userId);
+
+    if (!Object.keys(addressData).length) return null;
+
+    let addressDoc;
+
+    if (currentAddressId) {
+        addressDoc = await Addresses.findByIdAndUpdate(
+            currentAddressId,
+            { $set: addressData },
+            { new: true }
+        );
+    } else {
+        addressDoc = await Addresses.create(addressData);
+        await User.findByIdAndUpdate(userId, {
+            $set: { [type]: addressDoc._id }
+        });
+    }
+
+    return addressDoc;
+}
 
 exports.createQuotation = async (req, res) => {
     try {
@@ -342,79 +413,21 @@ exports.createQuotation = async (req, res) => {
             newData,
             { new: true, upsert: true }
         );
-        // Helper function to extract address fields
-        const extractAddressFields = (addressData) => {
-            const {
-                fname,
-                lname,
-                old_state_id,
-                old_country_id,
-                address2,
-                address1,
-                city,
-                zipCode,
-                country_id,
-                state_id,
-                phone,
-                company,
-                countryID,
-                state,
-                country
-            } = addressData;
-
-            return {
-                fname,
-                lname,
-                old_state_id,
-                old_country_id,
-                address2,
-                address1,
-                city,
-                zipCode,
-                country_id,
-                state_id,
-                phone,
-                company,
-                countryID,
-                state,
-                country,
-                user: userId
-            };
-        };
-
         // Handle billing address
-        let billingAddressData = null
-        let shippingAddressData = null
-        if (billing) {
-            const billingData = extractAddressFields(billing);
+        const billingAddressData = await upsertUserAddress({
+            userId,
+            type: 'billingAddress',
+            addressPayload: billing,
+            currentAddressId: billingAddress
+        });
 
-            if (billingAddress) {
-                billingAddressData = await Addresses.findByIdAndUpdate(
-                    billingAddress,
-                    billingData,
-                    { new: true }
-                );
-            } else {
-                billingAddressData = await Addresses.create(billingData);
-                await User.findByIdAndUpdate(userId, { billingAddress: billingAddressData?._id })
-            }
-        }
+        const shippingAddressData = await upsertUserAddress({
+            userId,
+            type: 'shippingAddress',
+            addressPayload: shipping,
+            currentAddressId: shippingAddress
+        });
 
-        // Handle shipping address
-        if (shipping) {
-            const shippingData = extractAddressFields(shipping);
-
-            if (shippingAddress) {
-                shippingAddressData = await Addresses.findByIdAndUpdate(
-                    shippingAddress,
-                    shippingData,
-                    { new: true }
-                );
-            } else {
-                shippingAddressData = await Addresses.create(shippingData);
-                await User.findByIdAndUpdate(userId, { shippingAddress: shippingAddressData?._id })
-            }
-        }
         await Cart.deleteMany({ user: userId });
         const quotation = await Quotation.findById(savedQuotation._id)
             .populate({
