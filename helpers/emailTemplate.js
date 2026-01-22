@@ -222,11 +222,11 @@ const generateEmailTemplate = (templateType, data) => {
                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
                <div class="container">
                        <p class="greeting" style="margin-top: 0; margin-bottom: 10px;">
-                            <strong>Hi, a new Web Quote has been generated on ${moment(data?.createdAt).format('lll')}</strong>
+                            <strong>Hi, a customer has completed their Sales Order on ${moment(data?.createdAt).format('lll')}</strong>
                         </p>
     
                         <p style="margin-top: 0; margin-bottom: 10px;">
-                            Please refer to the information below and the attached Quote for further details.
+                            Please refer to the information below and the attached invoice .pdf for further details.
                         </p>
                         <p>
                             <strong>Quote #:</strong> ${data?.quoteNo}<br>

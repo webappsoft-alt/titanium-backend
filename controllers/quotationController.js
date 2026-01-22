@@ -979,7 +979,7 @@ exports.sendQuotationEmail = [
                                 ? 'Please approve or assign a representative.'
                                 : 'Please follow up with the customer.'
                         },
-                        subject: `New Sales Order - ${updatedQuotation?.fname} ${updatedQuotation?.lname || ''} - ${(type == 'sales' || type == 'sales-cart') ? 'Order' : 'Quote'} #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo}`,
+                        subject: `New Sales Order - ${updatedQuotation?.fname} ${updatedQuotation?.lname || ''} - Quote #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo}`,
                         attachments: [
                             {
                                 filename: originalname,
@@ -1013,7 +1013,7 @@ exports.sendQuotationEmail = [
                             ? 'Please approve or assign a representative.'
                             : 'Please follow up with the customer.'
                     },
-                    subject: `New Sales Order - ${updatedQuotation?.fname} ${updatedQuotation?.lname || ''} - ${(type == 'sales' || type == 'sales-cart') ? 'Order' : 'Quote'} #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo}`,
+                    subject: `New Sales Order - ${updatedQuotation?.fname} ${updatedQuotation?.lname || ''} - Quote #${(type == 'sales' || type == 'sales-cart') ? updatedQuotation?.orderNo : updatedQuotation?.quoteNo}`,
                     attachments: [
                         {
                             filename: originalname,
