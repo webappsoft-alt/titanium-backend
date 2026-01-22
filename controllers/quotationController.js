@@ -494,19 +494,24 @@ exports.getCustomerQuotations = async (req, res) => {
             if (isNaN(start.getTime())) {
                 return res.status(400).json({ success: false, message: 'Invalid date format.' });
             }
-            query.createdAt = {
-                $gte: start, // Greater than or equal to start date
-                $lte: end    // Less than or equal to end date
-            }
+            query.$or = [
+                { createdTS: { $gte: start, $lte: end } },
+                {
+                    createdTS: { $exists: false },
+                    createdAt: { $gte: start, $lte: end }
+                }
+            ];
         }
         if (stats == 'dashboard') {
             query.status = { $in: ['pending', 'closed'] }
             query.isOpenQuote = true
-            const quotations = await Quotation.find(query).select('totalAmount createdAt updatedAt status type quoteNo orderNo').sort({ _id: -1 }).skip(skip).limit(pageSize).lean();
+            const quotations = await Quotation.find(query).select('totalAmount createdAt updatedAt createdTS status type quoteNo orderNo')
+                .sort({ createdTS: -1, createdAt: -1 }).skip(skip).limit(pageSize).lean();
             query.status = { $in: ['approved', 'pending', 'completed'] }
             query.type = { $nin: ['open-quote'] }
             query.isOpenQuote = false
-            const orders = await Quotation.find(query).select('totalAmount createdAt updatedAt status type quoteNo orderNo').sort({ _id: -1 }).skip(skip).limit(pageSize).lean();
+            const orders = await Quotation.find(query).select('totalAmount createdAt updatedAt createdTS status type quoteNo orderNo')
+                .sort({ createdTS: -1, createdAt: -1 }).skip(skip).limit(pageSize).lean();
 
             return sendEncryptedResponse(res, {
                 success: true,
@@ -514,7 +519,8 @@ exports.getCustomerQuotations = async (req, res) => {
                 orders
             });
         } else {
-            const quotations = await Quotation.find(query).sort({ _id: -1 }).skip(skip).limit(pageSize).lean();
+            const quotations = await Quotation.find(query)
+                .sort({ createdTS: -1, createdAt: -1 }).skip(skip).limit(pageSize).lean();
 
             const totalCount = await Quotation.countDocuments(query);
             const totalPages = Math.ceil(totalCount / pageSize);
@@ -593,17 +599,22 @@ exports.getAllQuotations = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid date format.' });
         }
         if (startDate) {
-            if (isNaN(start.getTime())) {
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
                 return res.status(400).json({ success: false, message: 'Invalid date format.' });
             }
-            query.createdAt = {
-                $gte: start, // Greater than or equal to start date
-                $lte: end    // Less than or equal to end date
-            }
+            query.$or = [
+                { createdTS: { $gte: start, $lte: end } },
+                {
+                    createdTS: { $exists: false },
+                    createdAt: { $gte: start, $lte: end }
+                }
+            ];
         }
 
         const skip = Math.max(0, (lastId - 1)) * pageSize;
-        const quotations = await Quotation.find(query).populate('user', '-password').sort((quote == 'open-quote' ? { updatedAt: -1 } : { _id: -1 })).skip(skip).limit(pageSize).lean();
+        const quotations = await Quotation.find(query).populate('user', '-password')
+            .sort((quote == 'open-quote' ? { updatedAt: -1 } : { createdTS: -1, createdAt: -1 }))
+            .skip(skip).limit(pageSize).lean();
 
         const totalCount = await Quotation.countDocuments(query);
         const totalPages = Math.ceil(totalCount / pageSize);
@@ -657,7 +668,13 @@ exports.getQuotationStats = async (req, res) => {
         const stats = await Quotation.aggregate([
             {
                 $match: {
-                    createdAt: { $gte: start, $lte: end }
+                    $or: [
+                        { createdTS: { $gte: start, $lte: end } },
+                        {
+                            createdTS: { $exists: false },
+                            createdAt: { $gte: start, $lte: end }
+                        }
+                    ]
                 }
             },
             {
@@ -700,7 +717,7 @@ exports.getQuotationById = async (req, res) => {
 exports.getQuotationByUserId = async (req, res) => {
     try {
         const quotation = await Quotation.find({ user: req.params.id, status: { $in: ['closed', 'pending', 'approved', 'completed'] } })
-        .select('status createdTS type user orderNo quoteNo isSalesOrder isOpenQuote closedReason totalAmount updatedAt').lean();
+            .select('status createdTS type user orderNo quoteNo isSalesOrder isOpenQuote closedReason totalAmount updatedAt').lean();
 
         sendEncryptedResponse(res, { success: quotation?.length > 0, data: quotation });
     } catch (error) {

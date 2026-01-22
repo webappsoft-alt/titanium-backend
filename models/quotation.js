@@ -177,6 +177,7 @@ const schema_ = new mongoose.Schema({
     },
     createdTS: {
         type: Date,
+        index: true
     },
     status: {
         type: String,
@@ -186,5 +187,6 @@ const schema_ = new mongoose.Schema({
 }, { timestamps: true });
 
 const Quotation = mongoose.model("Quotation", schema_);
+schema_.index({ createdTS: -1, createdAt: -1 });
 
 module.exports = Quotation;
