@@ -3,6 +3,7 @@ const { processScheduledQuotationEmails } = require('../controllers/quotationCon
 
 // Run every 10 minutes
 const startQuotationEmailCron = () => {
+    if (process.env.NODE_ENV === 'development') return
     cron.schedule('*/10 * * * *', async () => {
         console.log('Running scheduled quotation email cron job...');
         await processScheduledQuotationEmails();

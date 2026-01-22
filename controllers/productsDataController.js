@@ -1,10 +1,32 @@
-const Products = require("../models/_product"); // Products Schema
-const Quotation = require("../models/quotation"); // Products Schema
-const Price = require("../models/prices"); // Products Schema
-const Tolerances = require("../models/tolerance"); // Products Schema
-const ProductData = require("../models/productData"); // ProductsData Schema
+const Products = require("../models/_product");
+const Quotation = require("../models/quotation");
+const Price = require("../models/prices");
+const Tolerances = require("../models/tolerance");
+const ProductData = require("../models/productData");
 const mongoose = require("mongoose");
 const sendEncryptedResponse = require("../utils/sendEncryptedResponse");
+const { addData, getData, deleteData, deletePattern } = require("./redisController");
+
+// Redis keys - Only for frequently accessed, relatively static data
+const NAV_HEADER_KEY = "products:nav:header";
+const SEO_NAV_HEADER_KEY = "products:nav:seo-header";
+const PRODUCT_BY_ID_KEY = (id) => `products:detail:${id}`;
+const PRODUCT_BY_SLUG_KEY = (slug) => `products:slug:${slug}`;
+
+// Helper to clear all product-related caches
+const clearAllProductCaches = async () => {
+    try {
+        await deleteData(NAV_HEADER_KEY);
+        await deleteData(SEO_NAV_HEADER_KEY);
+
+        // 🔹 Clear all dynamic product detail caches (by pattern)
+        await deletePattern("products:detail:*");
+        await deletePattern("products:slug:*");
+        // Note: We don't clear individual product caches here as they're cleared on-demand
+    } catch (error) {
+        console.error("Error clearing product caches:", error);
+    }
+};
 
 exports.create = async (req, res) => {
     try {
@@ -78,6 +100,9 @@ exports.create = async (req, res) => {
         // Filter out any errors or null results
         const insertedOrUpdatedProducts = results.filter(product => product !== null);
 
+        // 🔹 Clear navigation caches after bulk create/update
+        await clearAllProductCaches();
+
         sendEncryptedResponse(res, {
             message: "Product data inserted/updated successfully",
             data: insertedOrUpdatedProducts,
@@ -110,7 +135,7 @@ exports.getAll = async (req, res) => {
         const metalAlloys = await ProductData.find(query).sort({ _id: -1 }).skip(skip).limit(pageSize).lean();
 
         const totalCount = await ProductData.countDocuments(query);
-        const totalPages = Math.ceil(totalCount / pageSize);;
+        const totalPages = Math.ceil(totalCount / pageSize);
 
         sendEncryptedResponse(res, {
             success: metalAlloys?.length > 0,
@@ -118,6 +143,7 @@ exports.getAll = async (req, res) => {
             count: { totalPage: totalPages, currentPageSize: metalAlloys.length }
         });
     } catch (error) {
+        console.error("Error in getAll:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error",
@@ -127,6 +153,15 @@ exports.getAll = async (req, res) => {
 };
 exports.getSeoNavHeader = async (req, res) => {
     try {
+        // 🔹 Cache this - it's public and changes rarely
+        const cached = await getData(SEO_NAV_HEADER_KEY);
+        if (cached) {
+            return res.status(200).json({
+                ...cached,
+                fromCache: true
+            });
+        }
+
         let query = { status: 'active' };
 
         // Fetch products with pagination
@@ -168,12 +203,19 @@ exports.getSeoNavHeader = async (req, res) => {
                     }, []) // Start with an empty array accumulator
             };
         });
-        res.status(200).json({
+
+        const response = {
             success: typeData.length > 0,
             products: typeData,
-        });
+        };
+
+        // Store in cache
+        await addData(SEO_NAV_HEADER_KEY, response);
+
+        res.status(200).json(response);
 
     } catch (error) {
+        console.error("Error in getSeoNavHeader:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error",
@@ -183,6 +225,15 @@ exports.getSeoNavHeader = async (req, res) => {
 };
 exports.getNavHeader = async (req, res) => {
     try {
+        // 🔹 Cache this - it's public and changes rarely
+        const cached = await getData(NAV_HEADER_KEY);
+        if (cached) {
+            return sendEncryptedResponse(res, {
+                ...cached,
+                fromCache: true
+            });
+        }
+
         let query = { status: 'active' };
 
         // Fetch products with pagination
@@ -224,12 +275,19 @@ exports.getNavHeader = async (req, res) => {
                     }, []) // Start with an empty array accumulator
             };
         });
-        sendEncryptedResponse(res, {
+
+        const response = {
             success: typeData.length > 0,
             products: typeData,
-        });
+        };
+
+        // Store in cache
+        await addData(NAV_HEADER_KEY, response);
+
+        sendEncryptedResponse(res, response);
 
     } catch (error) {
+        console.error("Error in getNavHeader:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error",
@@ -241,11 +299,20 @@ exports.getNavHeader = async (req, res) => {
 exports.getSeoById = async (req, res) => {
     try {
         const { id } = req.params;
+        const isObjectId = mongoose.Types.ObjectId.isValid(id);
+        const cacheKey = isObjectId ? PRODUCT_BY_ID_KEY(id) : PRODUCT_BY_SLUG_KEY(id);
 
-        // Determine whether the provided ID is a valid MongoDB ObjectId
-        const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { slug: id };
+        // 🔹 Cache individual product details - frequently accessed
+        const cached = await getData(cacheKey);
+        if (cached) {
+            return res.status(200).json({
+                ...cached,
+                fromCache: true
+            });
+        }
 
-        const metalAlloy = await ProductData.findOne(query);
+        const query = isObjectId ? { _id: id } : { slug: id };
+        const metalAlloy = await ProductData.findOne(query).lean();
 
         if (!metalAlloy) {
             return res.status(404).json({
@@ -254,14 +321,19 @@ exports.getSeoById = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        const response = {
             success: true,
             message: "Product data entry retrieved successfully",
             productData: metalAlloy,
-        });
+        };
+
+        // Cache the result
+        await addData(cacheKey, response);
+
+        res.status(200).json(response);
 
     } catch (error) {
-        console.error("Error in getById:", error);
+        console.error("Error in getSeoById:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error",
@@ -345,13 +417,13 @@ exports.edit_ = async (req, res) => {
             { new: true }
         );
 
-        if (!staticPage)
-            return res
-                .status(404)
-                .send({
-                    success: false,
-                    message: `Product data was not found.`,
-                });
+        if (!staticPage) {
+            return res.status(404).send({
+                success: false,
+                message: `Product data was not found.`,
+            });
+        }
+        await clearAllProductCaches();
 
         sendEncryptedResponse(res, {
             success: true,
@@ -359,10 +431,15 @@ exports.edit_ = async (req, res) => {
             data: staticPage,
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+        console.error("Error in edit_:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
     }
 };
+
 exports.delete_ = async (req, res) => {
     try {
 
@@ -374,51 +451,25 @@ exports.delete_ = async (req, res) => {
             { new: true }
         );
 
-        if (!staticPage)
-            return res
-                .status(404)
-                .send({
-                    success: false,
-                    message: `Product data was not found.`,
-                });
+        if (!staticPage) {
+            return res.status(404).send({
+                success: false,
+                message: `Product data was not found.`,
+            });
+        }
+        await clearAllProductCaches();
 
         sendEncryptedResponse(res, {
             success: true,
-            message: `Product updated successfully`,
+            message: `Product deactivated successfully`,
             data: staticPage,
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+        console.error("Error in delete_:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
     }
 };
-const handleResetAll = async () => {
-    try {
-        const [productsDeleted, productDataDeleted, quotationsDeleted, pricesDeleted, tolerancesDeleted] = await Promise.all([
-            Products.deleteMany(),
-            ProductData.deleteMany(),
-            Quotation.deleteMany(),
-            Price.deleteMany(),
-            Tolerances.deleteMany()
-        ]);
-
-        console.dir("Database Reset Summary:");
-        console.dir(`✅ Products deleted:`,);
-        console.dir(productsDeleted, { depth: null });
-        console.dir(`✅ ProductData deleted:`);
-        console.dir(productDataDeleted, { depth: null });
-        console.dir(`✅ Quotations deleted:`);
-        console.dir(quotationsDeleted, { depth: null });
-        console.dir(`✅ Prices deleted:`);
-        console.dir(pricesDeleted, { depth: null });
-        console.dir(`✅ Tolerances deleted:`);
-        console.dir(tolerancesDeleted, { depth: null });
-
-        return { success: true, message: "All collections have been reset successfully." };
-    } catch (error) {
-        console.error("❌ Error resetting database:", error);
-        return { success: false, error: "Failed to reset all collections." };
-    }
-};
-
-// handleResetAll()
