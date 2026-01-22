@@ -699,7 +699,8 @@ exports.getQuotationById = async (req, res) => {
 };
 exports.getQuotationByUserId = async (req, res) => {
     try {
-        const quotation = await Quotation.find({ user: req.params.id, status: { $in: ['closed', 'pending', 'approved', 'completed'] } });
+        const quotation = await Quotation.find({ user: req.params.id, status: { $in: ['closed', 'pending', 'approved', 'completed'] } })
+        .select('status createdTS type user orderNo quoteNo isSalesOrder isOpenQuote closedReason totalAmount updatedAt').lean();
 
         sendEncryptedResponse(res, { success: quotation?.length > 0, data: quotation });
     } catch (error) {
