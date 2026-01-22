@@ -613,7 +613,7 @@ exports.getAllQuotations = async (req, res) => {
 
         const skip = Math.max(0, (lastId - 1)) * pageSize;
         const quotations = await Quotation.find(query).populate('user', '-password')
-            .sort((quote == 'open-quote' ? { updatedAt: -1 } : { createdTS: -1, createdAt: -1 }))
+            .sort(({ createdTS: -1, createdAt: -1 }))
             .skip(skip).limit(pageSize).lean();
 
         const totalCount = await Quotation.countDocuments(query);
