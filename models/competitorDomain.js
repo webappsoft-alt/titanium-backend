@@ -12,5 +12,5 @@ const schema_ = new mongoose.Schema({
 }, { timestamps: true });
 
 const Prices = mongoose.model("CompetitorDomain", schema_);
-
+schema_.index({ domain: 1, status: 1 });
 module.exports = Prices;

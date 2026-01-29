@@ -261,7 +261,7 @@ const generateEmailTemplate = (templateType, data) => {
                     <strong>Country:</strong> ${data?.country || ''}<br>
                     <strong>State:</strong> ${data?.state || ''}</p>
                 <br>
-                <a href="https://qqa.titanium.com/dashboard/customers/edit/${data?._id}">Link to User</a>
+                <a href="https://qqa.titanium.com/auth/login">Login to Admin</a>
                </div>
                 </body>
                 </html>`;

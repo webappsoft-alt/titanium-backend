@@ -14,6 +14,7 @@ const { handleGetUser } = require('../controllers/quotationController');
 const CompetitorMarkup = require("../models/competitor-value");
 const MailSettings = require('../models/mailSetting');
 const CompetitorDomain = require('../models/competitorDomain');  // Your Mongoose schema file
+const { isCompetitorEmail } = require('../controllers/CompetitorDomainController');  // Your Mongoose schema file
 
 const Countries = require('../models/countries');
 const States = require('../models/states');
@@ -313,7 +314,6 @@ router.post('/verify-otp/registration', async (req, res) => {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
-
 router.post('/signup/customer', async (req, res) => {
   try {
     const { error } = validate(req.body);
@@ -340,6 +340,7 @@ router.post('/signup/customer', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     const territoriesData = await findTerritoryByLocation({ stateID, countryID, old_state_id, old_country_id, state, country })
 
+    const isCompetitor = await isCompetitorEmail(email)
     const newUser = new User({
       password: hashedPassword,
       fname,
@@ -352,6 +353,7 @@ router.post('/signup/customer', async (req, res) => {
       country, industry,
       zipCode, city, state,
       type: req.params.type,
+      isCompetitor: isCompetitor
     });
 
     await newUser.save();

@@ -116,7 +116,8 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 function generateAuthToken(_id, type, permissions) {
-  const token = jwt.sign({ _id: _id, type: type, permissions }, config.get('jwtPrivateKey'));
+  const expiresIn = '1d';
+  const token = jwt.sign({ _id: _id, type: type, permissions }, config.get('jwtPrivateKey'), { expiresIn });
   return token;
 }
 function generateIdToken(_id) {

@@ -92,3 +92,25 @@ exports.delete_ = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+exports.isCompetitorEmail = async (email) => {
+  try {
+    if (!email || typeof email !== 'string') return false;
+
+    const parts = email.trim().toLowerCase().split('@');
+
+    if (parts.length !== 2 || !parts[1]) return false;
+
+    const domainPart = `@${parts[1]}`;
+
+    const exists = await Competitor.exists({
+      domain: domainPart,
+      status: 'active'
+    });
+
+    return Boolean(exists);
+  } catch (error) {
+    console.error('isCompetitorEmail error:', error);
+    return false;
+  }
+};
