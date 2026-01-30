@@ -177,6 +177,8 @@ const generateEmailTemplate = (templateType, data) => {
                     <strong>Country:</strong> ${data?.country || ''}<br>
                     <strong>State:</strong> ${data?.state || ''}</p>
                     <p>Regards,<br>Your Sales Team</p>
+                    <br>
+                <a href="https://qqa.titanium.com/auth/login">Login to Admin</a>
                 </body>
                 </html>`;
 
@@ -207,6 +209,8 @@ const generateEmailTemplate = (templateType, data) => {
                             <strong>Country:</strong> ${data?.country || data?.billing?.country || data?.shipping?.country || 'N/A'}<br>
                             <strong>State:</strong> ${data?.state || data?.billing?.state || data?.shipping?.state || 'N/A'}
                         </p>
+                        <br>
+                <a href="https://qqa.titanium.com/auth/login">Login to Admin</a>
                         </div>
                     </body>
                     </html>`;
@@ -237,6 +241,8 @@ const generateEmailTemplate = (templateType, data) => {
                             <strong>Country:</strong> ${data?.country || data?.billing?.country || data?.shipping?.country || 'N/A'}<br>
                             <strong>State:</strong> ${data?.state || data?.billing?.state || data?.shipping?.state || 'N/A'}
                         </p>
+                        <br>
+                <a href="https://qqa.titanium.com/auth/login">Login to Admin</a>
                         </div>
                     </body>
                     </html>`;
@@ -302,6 +308,8 @@ const generateEmailTemplate = (templateType, data) => {
                     <strong>Phone:</strong> ${data?.phone || ''}<br>
                     <strong>Country:</strong> ${data?.country || ''}<br>
                     <strong>State:</strong> ${data?.state || ''}</p>
+                    <br>
+                <a href="https://qqa.titanium.com/auth/login">Login to Admin</a>
                 </body>
                 </html>`;
 
