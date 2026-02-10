@@ -6,6 +6,7 @@ const Cart = require("../models/cart");
 const { parseEmails } = require('../helpers/utils')
 const MailSettings = require('../models/mailSetting');
 
+const logger = require('../startup/logger'); // Adjust the path as needed
 
 const multer = require('multer');
 const nodemailer = require('nodemailer');
@@ -836,6 +837,7 @@ exports.sendOpenQuotationEmail = [
 
             const quotation = await quotationPromise;
             if (!quotation) {
+                logger.warn('Quotation not found  ❌')
                 return res.status(404).json({ success: false, message: 'Quotation not found' });
             }
 
@@ -853,6 +855,7 @@ exports.sendOpenQuotationEmail = [
                 subject: `Open Quote - Titanium Industries`,
                 attachments: attachment,
             });
+            logger.warn(`Open Quote Sent To: ${quotation?.email || quotationPromise?.user?.email}  ✅`)
             if (type == 'send-to-all') {
                 const userPromise = User.findById(quotation.user?._id)
                     .select('salesRep assignBranch accountManager regionalManager')
@@ -890,7 +893,7 @@ exports.sendOpenQuotationEmail = [
                 for (const email of uniqueRoleEmails) {
                     await sendGridEmail({ ...rolePayload, email });
                 }
-
+                logger.warn(`Open Quote Sent  To Internal Assigned Roles Titanium users: ${uniqueRoleEmails?.join(', ')}  ✅`)
                 // ──────────────────────────────
                 // 4) Notify branch + titanium users
                 // ──────────────────────────────
@@ -917,6 +920,7 @@ exports.sendOpenQuotationEmail = [
                     subject: rolePayload.subject,
                     attachments: attachment,
                 });
+                logger.warn(`Open Quote Sent  To Main Titanium users: ${uniqueTitaniumEmails?.join(', ')}  ✅`)
             }
             const updateQuotation = await Quotation.findByIdAndUpdate(quotationId, { $set: { sentEmail: { finalizeBtn: true } } })
             return sendEncryptedResponse(res, {
