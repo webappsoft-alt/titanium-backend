@@ -855,7 +855,7 @@ exports.sendOpenQuotationEmail = [
                 subject: `Open Quote - Titanium Industries`,
                 attachments: attachment,
             });
-            logger.warn(`Open Quote Sent To: ${quotation?.email || quotationPromise?.user?.email}  ✅`)
+            logger.info(`Open Quote Sent To: ${quotation?.email || quotationPromise?.user?.email}  ✅`)
             if (type == 'send-to-all') {
                 const userPromise = User.findById(quotation.user?._id)
                     .select('salesRep assignBranch accountManager regionalManager')
@@ -893,7 +893,7 @@ exports.sendOpenQuotationEmail = [
                 for (const email of uniqueRoleEmails) {
                     await sendGridEmail({ ...rolePayload, email });
                 }
-                logger.warn(`Open Quote Sent  To Internal Assigned Roles Titanium users: ${uniqueRoleEmails?.join(', ')}  ✅`)
+                logger.info(`Open Quote Sent  To Internal Assigned Roles Titanium users: ${uniqueRoleEmails?.join(', ')}  ✅`)
                 // ──────────────────────────────
                 // 4) Notify branch + titanium users
                 // ──────────────────────────────
@@ -920,7 +920,7 @@ exports.sendOpenQuotationEmail = [
                     subject: rolePayload.subject,
                     attachments: attachment,
                 });
-                logger.warn(`Open Quote Sent  To Main Titanium users: ${uniqueTitaniumEmails?.join(', ')}  ✅`)
+                logger.info(`Open Quote Sent  To Main Titanium users: ${uniqueTitaniumEmails?.join(', ')}  ✅`)
             }
             const updateQuotation = await Quotation.findByIdAndUpdate(quotationId, { $set: { sentEmail: { finalizeBtn: true } } })
             return sendEncryptedResponse(res, {
