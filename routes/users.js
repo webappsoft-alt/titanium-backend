@@ -22,6 +22,7 @@ const Addresses = require('../models/addresses');
 const { parseEmails } = require('../helpers/utils');
 const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 const { findTerritoryByLocation } = require('../controllers/territoriesController')
+const logAudit = require('../utils/auditLogger')
 
 const userPath = [
   { label: '/customer/quotes', value: 'quotes' },
@@ -51,7 +52,7 @@ router.get('/me', auth, async (req, res) => {
     .populate('billingAddress')
     .lean()
   const competData = await CompetitorMarkup.findOne().sort({ _id: -1 }).select('minValue maxValue').lean()
-  const token = generateAuthToken(user?._id, user?.type, user?.permissions || '');
+  const token = generateAuthToken(user?._id, user?.type, user?.permissions || '', user?.email);
   sendEncryptedResponse(res, { success: !!user, user: user, token, data: competData });
   const stateManagment = userPath.find(item => page?.startsWith(item.label)) || null;
   if (stateManagment?.value) {
@@ -207,6 +208,7 @@ router.put('/change-password', auth, async (req, res) => {
 
     await user.save();
 
+    logAudit(req, 'PASSWORD_CHANGED', 'User', req.user._id, `User changed their own password`);
     sendEncryptedResponse(res, { success: true, message: "Password updated successfully" });
   } catch (error) {
     console.error('Error sending verification code:', error);
@@ -507,6 +509,7 @@ router.post('/import/customer', [auth, admin], async (req, res) => {
 
     const bulkResult = await User.bulkWrite(validOperations, { ordered: false });
 
+    logAudit(req, 'CUSTOMERS_BULK_IMPORTED', 'User', null, `Bulk imported ${validOperations.length} customers`, { matchedCount: bulkResult.matchedCount, modifiedCount: bulkResult.modifiedCount, upsertedCount: bulkResult.upsertedCount });
     return sendEncryptedResponse(res, {
       success: true,
       message: 'Customer data processed successfully',
@@ -611,6 +614,7 @@ router.post('/import/titanium', [auth, admin], async (req, res) => {
     );
 
     // Respond with the results of all operations
+    logAudit(req, 'TITANIUM_USERS_BULK_IMPORTED', 'User', null, `Bulk imported ${titaniumData.length} titanium users`, { totalProcessed: results.length, successCount: results.filter(r => r.success).length });
     sendEncryptedResponse(res, {
       success: true,
       message: 'Customer data processed successfully.',
@@ -653,6 +657,7 @@ router.post('/register/titanium', [auth, admin], async (req, res) => {
 
     await newUser.save();
 
+    logAudit(req, 'TITANIUM_USER_CREATED', 'User', newUser._id, `Titanium sub-admin ${email} registered`);
     sendEncryptedResponse(res, { success: true, message: 'Account created successfully' });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
@@ -675,6 +680,7 @@ router.put('/titanium/:id', [auth, admin], async (req, res) => {
     }
     const updatedUser = await User.findByIdAndUpdate(userId, query)
 
+    logAudit(req, password ? 'TITANIUM_USER_PASSWORD_CHANGED' : 'TITANIUM_USER_UPDATED', 'User', userId, `Titanium sub-admin ${email} updated`, { updatedFields: Object.keys(query) });
     sendEncryptedResponse(res, { success: true, message: 'Account Updated successfully', updatedUser });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
@@ -855,32 +861,6 @@ router.get('/customer/:id/:status/:search?', [auth, admin], async (req, res) => 
 //     return res.status(500).json({ message: 'Internal server error', error: error.message });
 //   }
 // });
-router.post('/google/auth', async (req, res) => {
-  try {
-    const { fname, email, profilePicture } = req.body;
-
-    const user = await User.findOne({ email });
-
-    if (user) {
-      const token = generateAuthToken(user._id, user.type);
-      sendEncryptedResponse(res, { success: true, message: 'Login successfully', token: token, user: user });
-      return
-    }
-
-    const newUser = new User({
-      fname,
-      profilePicture,
-      email,
-      type: 'customer',
-    });
-
-    await newUser.save();
-    const token = generateAuthToken(newUser._id, newUser.type);
-    sendEncryptedResponse(res, { success: true, message: 'Account created successfully', token: token, user: newUser });
-  } catch (error) {
-    return res.status(500).json({ message: 'Internal server error', error: error.message });
-  }
-});
 
 router.post('/verify-otp/forget-password', passwordauth, async (req, res) => {
   try {
@@ -970,6 +950,9 @@ router.put('/update-user/:id?', auth, async (req, res) => {
   if (!user) return res.status(400).send({ success: false, message: 'The User with the given ID was not found.' });
   const updatedUser = await User.findOne({ _id: userId }).select('-password')
 
+  if (req.params.id && req.params.id !== req.user._id.toString()) {
+    logAudit(req, password ? 'CUSTOMER_PASSWORD_CHANGED' : 'CUSTOMER_UPDATED', 'User', userId, `Customer ${checkUser?.email} updated by admin`, { updatedFields: Object.keys(updateFields) });
+  }
   sendEncryptedResponse(res, { success: true, message: 'User updated successfully', user: updatedUser });
 });
 
@@ -1030,6 +1013,7 @@ router.post('/admin/create-user', [auth, admin], async (req, res) => {
     // Fetch created user without password
     const newUser = await User.findById(user._id).select('-password');
 
+    logAudit(req, 'CUSTOMER_CREATED', 'User', user._id, `Customer ${email} created by admin`);
     sendEncryptedResponse(res, { success: true, message: 'User created successfully', user: newUser });
   } catch (error) {
     console.error(error);
@@ -1065,6 +1049,7 @@ router.put('/change/:status/:id', [auth, admin], async (req, res) => {
   //   })
   // }
 
+  logAudit(req, `CUSTOMER_${req.params.status.toUpperCase()}`, 'User', req.params.id, `Customer ${checkUser?.email} status changed to ${req.params.status}`, { previousStatus: checkUser?.status, newStatus: req.params.status });
   sendEncryptedResponse(res, { success: true, message: 'User Updated successfully', user });
 });
 

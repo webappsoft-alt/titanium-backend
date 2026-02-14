@@ -4,11 +4,29 @@ const { User, generateAuthToken } = require('../models/user');
 const express = require('express');
 const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 const router = express.Router();
-// const handleDelete =async ()=>{
-//   await User.findOneAndDelete().sort({_id:-1})
-// }
-// handleDelete()
-router.post('/', async (req, res) => {
+const rateLimit = require('express-rate-limit');
+const authLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  message: 'Too many login attempts. Try again later.',
+  keyGenerator: (req) => {
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+    return req.body?.email || ip;
+  }
+});
+const authIPLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  message: 'Too many login attempts. Try again later.',
+  keyGenerator: (req) => {
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+    return ip;
+  }
+});
+
+router.post('/', authLimiter, authIPLimiter, async (req, res) => {
   try {
     const { error } = validate(req.body);
     if (error) return res.status(400).send({ success: false, message: error.details[0].message });
@@ -54,10 +72,22 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const token = generateAuthToken(user._id, user.type, user?.permissions || '');
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'] || '';
+
+    await User.updateOne({ _id: user._id }, {
+      lastLogin: {
+        date: new Date(),
+        ip,
+        browser: userAgent,
+      }
+    });
+
+    const token = generateAuthToken(user._id, user.type, user?.permissions || '', user?.email);
     sendEncryptedResponse(res, {
       token: token,
-      user: user,
+      user: { ...user, lastLogin: { date: new Date(), ip, browser: userAgent } },
       success: true,
     });
   } catch (error) {
@@ -66,13 +96,13 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.post('/admin', async (req, res) => {
+router.post('/admin', authLimiter, authIPLimiter, async (req, res) => {
   const { error } = validate(req.body);
   if (error) return res.status(400).send({ success: false, message: error.details[0].message });
 
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).lean();
 
   if (!user) return res.status(400).send({ success: false, message: 'Invalid credentials' });
 
@@ -81,10 +111,22 @@ router.post('/admin', async (req, res) => {
 
   if (user.type !== 'admin') return res.status(400).send({ success: false, message: 'Invalid credentials' });
 
-  const token = generateAuthToken(user._id, user.type, "admin");
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+  const userAgent = req.headers['user-agent'] || '';
+
+  await User.updateOne({ _id: user._id }, {
+    lastLogin: {
+      date: new Date(),
+      ip,
+      browser: userAgent,
+    }
+  });
+
+  const token = generateAuthToken(user._id, user.type, "admin", user?.permissions || '', user.email);
   sendEncryptedResponse(res, {
     token: token,
-    user: user,
+    user: { ...user, lastLogin: { date: new Date(), ip, browser: userAgent } },
     success: true
   });
 });

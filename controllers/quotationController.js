@@ -14,6 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const { sendGridEmail } = require('./sendGridEmial');
 const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
+const logAudit = require('../utils/auditLogger');
 
 // Use multer to handle file uploads
 const storage = multer.memoryStorage();
@@ -759,6 +760,7 @@ exports.updateQuotation = async (req, res) => {
 
             const cart = await Cart.findOneAndDelete(query)
         }
+        logAudit(req, 'QUOTATION_UPDATED', 'Quotation', req.params.id, `Quotation ${updatedQuotation?.quoteNo || req.params.id} updated`);
         sendEncryptedResponse(res, { success: true, message: "Quotation updated successfully", data: updatedQuotation });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -814,6 +816,7 @@ exports.updateStatus = async (req, res) => {
                 subject: `Welcome to Titanium Industries`
             })
         }
+        logAudit(req, `QUOTATION_${status.toUpperCase()}`, 'Quotation', req.params.id, `Quotation ${updatedQuotation?.quoteNo || req.params.id} status changed to ${status}`, { previousType: type, newStatus: status, closedReason: closedReason || null });
         sendEncryptedResponse(res, { success: true, message: "Quotation updated successfully", data: updatedQuotation });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -1071,6 +1074,7 @@ exports.deleteQuotation = async (req, res) => {
         if (!deletedQuotation) {
             return res.status(404).json({ success: false, message: "Quotation not found" });
         }
+        logAudit(req, 'QUOTATION_DELETED', 'Quotation', req.params.id, `Quotation ${req.params.id} deleted (deactivated)`);
         sendEncryptedResponse(res, { success: true, message: "Quotation deleted successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

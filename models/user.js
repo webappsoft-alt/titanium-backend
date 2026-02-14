@@ -113,11 +113,19 @@ const userSchema = new mongoose.Schema({
     default: 'customer',
     enum: ['customer', 'admin', 'sales', 'sub-admin']
   },
+
+  lastLogin: {
+    date: { type: Date },
+    ip: { type: String },
+    browser: { type: String },
+    os: { type: String },
+    device: { type: String },
+  },
 }, { timestamps: true });
 
-function generateAuthToken(_id, type, permissions) {
+function generateAuthToken(_id, type, permissions, email) {
   const expiresIn = '1d';
-  const token = jwt.sign({ _id: _id, type: type, permissions }, config.get('jwtPrivateKey'), { expiresIn });
+  const token = jwt.sign({ _id: _id, type: type, permissions, email }, config.get('jwtPrivateKey'), { expiresIn });
   return token;
 }
 function generateIdToken(_id) {
