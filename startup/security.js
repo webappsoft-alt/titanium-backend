@@ -4,20 +4,30 @@ const hpp = require('hpp');
 
 // --- Global Rate Limiter (DDoS protection) ---
 const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 10 * 60 * 1000, // 15 minutes
     max: 200, // limit each IP to 200 requests per window
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many requests, please try again later.' },
+    keyGenerator: (req) => {
+        const forwarded = req.headers['x-forwarded-for'];
+        const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+        return ip;
+    }
 });
 
 // --- Strict Rate Limiter for Auth Routes (brute-force protection) ---
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 10 * 60 * 1000, // 15 minutes
     max: 15, // limit each IP to 15 login/register attempts per window
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many authentication attempts, please try again after 15 minutes.' },
+    keyGenerator: (req) => {
+        const forwarded = req.headers['x-forwarded-for'];
+        const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+        return ip;
+    }
 });
 
 // --- Password Reset Rate Limiter ---
@@ -27,6 +37,11 @@ const passwordResetLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many password reset requests, please try again after an hour.' },
+    keyGenerator: (req) => {
+        const forwarded = req.headers['x-forwarded-for'];
+        const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+        return ip;
+    }
 });
 
 // --- Simple XSS Sanitizer (replaces deprecated xss-clean) ---
