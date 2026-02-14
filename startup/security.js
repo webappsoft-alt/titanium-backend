@@ -81,7 +81,7 @@ module.exports = function (app) {
     app.use(mongoSanitize());
 
     // XSS input sanitization
-    app.use(xssSanitizer);
+    // app.use(xssSanitizer);
 
     // HTTP Parameter Pollution protection
     app.use(hpp());
