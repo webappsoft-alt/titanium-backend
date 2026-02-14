@@ -6,3 +6,4 @@ App.js
 *.log
 logfile.log
 uncaughtExceptions.log
+logs
