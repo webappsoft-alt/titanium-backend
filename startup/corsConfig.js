@@ -8,6 +8,7 @@ const allowedOrigins = [
     'https://www.api.titanium.com',
     'https://titanium.com',
     'https://www.titanium.com',
+    'http://localhost:3005'
 ];
 const blockApiCallers = (req, res, next) => {
 

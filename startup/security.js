@@ -78,7 +78,7 @@ module.exports = function (app) {
     app.use(globalLimiter);
 
     // NoSQL injection protection — strips $ and . from req.body/query/params
-    app.use(mongoSanitize());
+    // app.use(mongoSanitize());
 
     // XSS input sanitization
     // app.use(xssSanitizer);
