@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 
 const express = require('express');
 const app = express();
+app.set('trust proxy', 1);
 const http = require('http');
 const logger = require('./startup/logger'); // Adjust the path as needed
 const server = http.createServer(app);
