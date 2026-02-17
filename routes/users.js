@@ -264,45 +264,6 @@ router.post('/verify-otp/registration', async (req, res) => {
         type: 'user-registration',
         data: user
       })
-      const assignedBranchId = user?.assignBranch ?? null;
-
-      const territoryQuery = assignedBranchId
-        ? { _id: assignedBranchId }
-        : {
-          $or: [
-            { 'states.stateID': user.stateID },
-            { 'states.old_id': user.old_state_id },
-          ],
-        };
-
-      const territoryIds = await Territories.distinct('_id', territoryQuery);
-
-      const usersList = territoryIds?.length
-        ? await User.find({
-          routing: { $in: territoryIds },
-          type: 'sub-admin',
-        })
-          .select('email')
-          .lean()
-        : [];
-      // Titanium users
-      const titaniumUsers = await handleTitaniumUsersEmail();
-
-      // Merge and deduplicate emails
-      const uniqueTitaniumUsers = [
-        ...new Set([
-          ...titaniumUsers,
-          ...usersList.map(item => item.email)
-        ])
-      ];
-
-      await sendGridEmail({
-        titaniumUsers: uniqueTitaniumUsers,
-        sendCode: false,
-        subject: 'New Pending “T.I. Quick Quote App Account”',
-        type: 'pending-user',
-        data: user
-      })
     }
     return sendEncryptedResponse(res, { success: true, message: 'Account created successfully, Please wait for admin approval' });
   } catch (error) {
@@ -364,6 +325,53 @@ router.post('/signup/customer', async (req, res) => {
       const tempVerification = new TempUser({ email, code: verificationCode });
       await tempVerification.save();
     }
+    const assignedBranchId = territoriesData?.data?._id ?? null;
+
+    const territoryQuery = assignedBranchId
+      ? { _id: assignedBranchId }
+      : {
+        $or: [
+          { 'states.stateID': stateID },
+          { 'states.old_id': old_state_id },
+        ],
+      };
+
+    const territoryIds = await Territories.distinct('_id', territoryQuery);
+
+    const usersList = territoryIds?.length
+      ? await User.find({
+        routing: { $in: territoryIds },
+        type: 'sub-admin',
+      })
+        .select('email')
+        .lean()
+      : [];
+    // Titanium users
+    const titaniumUsers = await handleTitaniumUsersEmail();
+
+    // Merge and deduplicate emails
+    const uniqueTitaniumUsers = [
+      ...new Set([
+        ...titaniumUsers,
+        ...usersList.map(item => item.email)
+      ])
+    ];
+
+    await sendGridEmail({
+      titaniumUsers: uniqueTitaniumUsers,
+      sendCode: false,
+      subject: 'New Pending “T.I. Quick Quote App Account”',
+      type: 'pending-user',
+      data: {
+        fname,
+        lname,
+        phone,
+        email,
+        company,
+        country,
+        zipCode, city, state,
+      }
+    })
     sendEncryptedResponse(res, { success: true, message: 'Verification code match successfully', verificationCode });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
