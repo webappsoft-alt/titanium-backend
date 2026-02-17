@@ -303,13 +303,6 @@ router.post('/verify-otp/registration', async (req, res) => {
         type: 'pending-user',
         data: user
       })
-      await sendGridEmail({
-        sendCode: false,
-        subject: 'New Pending “T.I. Quick Quote App Account”',
-        email: 'sales@titanium.com',
-        type: 'pending-user',
-        data: user
-      })
     }
     return sendEncryptedResponse(res, { success: true, message: 'Account created successfully, Please wait for admin approval' });
   } catch (error) {
