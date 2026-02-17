@@ -18,6 +18,7 @@ exports.sendGridEmail = async ({
      titaniumUsers = []
 }) => {
      try {
+          logger.info(`🕶️ Ready For Email SendGrid email: ${email} type: ${type}`);
           // Convert attachment content (buffer) to base64 if not already
           const formattedAttachments = attachments.map(file => {
                const base64Content =
@@ -73,10 +74,10 @@ exports.sendGridEmail = async ({
                          : htmlMail);
 
           await sgMail.send(payload);
-          logger.info('Email sent via SendGrid ✅');
+          logger.info(`Email sent via SendGrid ✅ email: ${email} type: ${type}`);
      } catch (error) {
           console.log(error);
-          logger.error('Error sending email via SendGrid ❌: ', error.response?.body || error.message);
+          logger.error('Error sending email via SendGrid ❌: ', error.response?.body || error.message, type);
      }
 };
 
