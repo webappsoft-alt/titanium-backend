@@ -73,7 +73,7 @@ exports.sendGridEmail = async ({
 }) => {
      try {
 
-          logger.info(`🕶️ Preparing email | type: ${type}`);
+          logger.info(`🕶️ Preparing email | type: ${type} | email: ${email} | sendCode ${sendCode ? 'TRUE' : 'FALSE'}`);
 
           const formattedAttachments = formatAttachments(attachments);
 
