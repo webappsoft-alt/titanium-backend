@@ -7,7 +7,7 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const authLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 5,
+  max: 10,
   message: 'Too many login attempts. Try again later.',
   keyGenerator: (req) => {
     const forwarded = req.headers['x-forwarded-for'];
@@ -17,7 +17,7 @@ const authLimiter = rateLimit({
 });
 const authIPLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 10,
+  max: 200,
   message: 'Too many login attempts. Try again later.',
   keyGenerator: (req) => {
     const forwarded = req.headers['x-forwarded-for'];
