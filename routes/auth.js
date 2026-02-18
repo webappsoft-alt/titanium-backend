@@ -5,10 +5,12 @@ const express = require('express');
 const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
+const { isWhitelisted } = require('../startup/security');
 const authLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 10,
   message: 'Too many login attempts. Try again later.',
+  skip: isWhitelisted,
   keyGenerator: (req) => {
     const forwarded = req.headers['x-forwarded-for'];
     const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
@@ -19,6 +21,7 @@ const authIPLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 200,
   message: 'Too many login attempts. Try again later.',
+  skip: isWhitelisted,
   keyGenerator: (req) => {
     const forwarded = req.headers['x-forwarded-for'];
     const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;

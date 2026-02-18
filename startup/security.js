@@ -2,32 +2,40 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 
+// --- IP Whitelist (comma-separated in env, e.g. WHITELISTED_IPS="1.2.3.4,5.6.7.8") ---
+const WHITELISTED_IPS = process.env.WHITELISTED_IPS
+    ? process.env.WHITELISTED_IPS.split(',').map(ip => ip.trim())
+    : [];
+
+function getClientIP(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    return forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+}
+
+function isWhitelisted(req) {
+    return WHITELISTED_IPS.includes(getClientIP(req));
+}
+
 // --- Global Rate Limiter (DDoS protection) ---
 const globalLimiter = rateLimit({
-    windowMs: 10 * 60 * 1000, // 15 minutes
-    max: 200, // limit each IP to 200 requests per window
+    windowMs: 10 * 60 * 1000,
+    max: 200,
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many requests, please try again later.' },
-    keyGenerator: (req) => {
-        const forwarded = req.headers['x-forwarded-for'];
-        const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
-        return ip;
-    }
+    skip: isWhitelisted,
+    keyGenerator: getClientIP,
 });
 
 // --- Strict Rate Limiter for Auth Routes (brute-force protection) ---
 const authLimiter = rateLimit({
-    windowMs: 10 * 60 * 1000, // 15 minutes
+    windowMs: 10 * 60 * 1000,
     max: 15, // limit each IP to 15 login/register attempts per window
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many authentication attempts, please try again after 15 minutes.' },
-    keyGenerator: (req) => {
-        const forwarded = req.headers['x-forwarded-for'];
-        const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
-        return ip;
-    }
+    skip: isWhitelisted,
+    keyGenerator: getClientIP,
 });
 
 // --- Password Reset Rate Limiter ---
@@ -37,11 +45,8 @@ const passwordResetLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Too many password reset requests, please try again after an hour.' },
-    keyGenerator: (req) => {
-        const forwarded = req.headers['x-forwarded-for'];
-        const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
-        return ip;
-    }
+    skip: isWhitelisted,
+    keyGenerator: getClientIP,
 });
 
 // --- Simple XSS Sanitizer (replaces deprecated xss-clean) ---
@@ -88,4 +93,5 @@ module.exports = function (app) {
 };
 
 module.exports.authLimiter = authLimiter;
+module.exports.isWhitelisted = isWhitelisted;
 module.exports.passwordResetLimiter = passwordResetLimiter;
