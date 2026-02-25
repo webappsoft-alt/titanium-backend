@@ -294,7 +294,7 @@ router.post('/signup/customer', async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const territoriesData = await findTerritoryByLocation({ stateID, countryID, old_state_id, old_country_id, state, country })
+    const territoriesData = await findTerritoryByLocationTest({ stateID, countryID, old_state_id, old_country_id, state, country })
 
     const isCompetitor = await isCompetitorEmail(email)
     const newUser = new User({
