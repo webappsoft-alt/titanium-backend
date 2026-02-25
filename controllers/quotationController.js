@@ -796,7 +796,7 @@ exports.updateStatus = async (req, res) => {
             })
             // Branch + titanium users list (keep duplicates for tracking)
             const assignBranchUsers = updatedQuotation?.user?.assignBranch
-                ? await User.find({ type: 'sub-admin', routing: { $in: updatedQuotation?.user?.assignBranch } })
+                ? await User.find({ type: 'sub-admin', status: "active", routing: { $in: updatedQuotation?.user?.assignBranch } })
                     .lean()
                     .select('email')
                 : [];
@@ -905,6 +905,7 @@ exports.sendOpenQuotationEmail = [
                         await User.find({
                             type: 'sub-admin',
                             routing: { $in: user.assignBranch },
+                            status: "active"
                         })
                             .select('email')
                             .lean()
@@ -1029,7 +1030,7 @@ exports.sendQuotationEmail = [
 
                 // Branch + titanium users list (keep duplicates for tracking)
                 const assignBranchUsers = user.assignBranch
-                    ? await User.find({ type: 'sub-admin', routing: { $in: user.assignBranch } })
+                    ? await User.find({ type: 'sub-admin', status: "active", routing: { $in: user.assignBranch } })
                         .lean()
                         .select('email')
                     : [];
@@ -1223,6 +1224,7 @@ exports.processScheduledQuotationEmails = async () => {
                         await User.find({
                             type: 'sub-admin',
                             routing: { $in: user.assignBranch },
+                            status: "active"
                         })
                             .select('email')
                             .lean()

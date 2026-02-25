@@ -342,6 +342,7 @@ router.post('/signup/customer', async (req, res) => {
       ? await User.find({
         routing: { $in: territoryIds },
         type: 'sub-admin',
+        status: "active"
       })
         .select('email')
         .lean()
@@ -401,6 +402,7 @@ router.post('/check-routing', async (req, res) => {
       ? await User.find({
         routing: { $in: territoryIds },
         type: 'sub-admin',
+        status: "active"
       })
         .select('email')
         .lean()
