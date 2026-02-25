@@ -21,7 +21,7 @@ const States = require('../models/states');
 const Addresses = require('../models/addresses');
 const { parseEmails } = require('../helpers/utils');
 const sendEncryptedResponse = require('../utils/sendEncryptedResponse');
-const { findTerritoryByLocation } = require('../controllers/territoriesController')
+const { findTerritoryByLocation, findTerritoryByLocationTest } = require('../controllers/territoriesController')
 const logAudit = require('../utils/auditLogger')
 
 const userPath = [
@@ -373,6 +373,50 @@ router.post('/signup/customer', async (req, res) => {
       }
     })
     sendEncryptedResponse(res, { success: true, message: 'Verification code match successfully', verificationCode });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+router.post('/check-routing', async (req, res) => {
+  try {
+
+    const { stateID, countryID, old_state_id, old_country_id, country, state } = req.body;
+
+    const territoriesData = await findTerritoryByLocationTest({ stateID, countryID, old_state_id, old_country_id, state, country })
+
+    const assignedBranchId = territoriesData?.data?._id ?? null;
+
+    const territoryQuery = assignedBranchId
+      ? { _id: assignedBranchId }
+      : {
+        $or: [
+          { 'states.stateID': stateID },
+          { 'states.old_id': old_state_id },
+        ],
+      };
+
+    const territoryIds = await Territories.distinct('_id', territoryQuery);
+
+    const usersList = territoryIds?.length
+      ? await User.find({
+        routing: { $in: territoryIds },
+        type: 'sub-admin',
+      })
+        .select('email')
+        .lean()
+      : [];
+    // Titanium users
+    const titaniumUsers = await handleTitaniumUsersEmail();
+
+    // Merge and deduplicate emails
+    const uniqueTitaniumUsers = [
+      ...new Set([
+        ...titaniumUsers,
+        ...usersList.map(item => item.email)
+      ])
+    ];
+
+    sendEncryptedResponse(res, { success: true, message: 'Routing', data: { titaniumUsers: uniqueTitaniumUsers, territoriesData: territoriesData?.data, assignedBranchId } });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }

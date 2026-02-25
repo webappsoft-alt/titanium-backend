@@ -222,3 +222,120 @@ exports.findTerritoryByLocation = async (data) => {
         };
     }
 };
+exports.findTerritoryByLocationTest = async (data) => {
+    try {
+        const { countryID, stateID, old_country_id, old_state_id, country, state } = data;
+
+        if (!countryID && !stateID && !old_country_id && !old_state_id && !country && !state) {
+            return {
+                success: false,
+                message: 'At least one search parameter is required'
+            };
+        }
+
+        let territory = null;
+        let matchType = null;
+
+        const stateConditions = [];
+        const countryConditions = [];
+
+        // =========================
+        // STATE CONDITIONS
+        // =========================
+        if (stateID && mongoose.Types.ObjectId.isValid(stateID)) {
+            const objId = new mongoose.Types.ObjectId(stateID);
+            stateConditions.push({ 'states.stateID': objId });
+            stateConditions.push({ 'states._id': objId });
+        }
+
+        if (old_state_id) {
+            stateConditions.push({ 'states.old_id': old_state_id });
+        }
+
+        if (state) {
+            stateConditions.push({
+                'states.name': { $regex: new RegExp(`^${state}$`, 'i') }
+            });
+        }
+
+        // =========================
+        // COUNTRY CONDITIONS
+        // =========================
+        if (countryID && mongoose.Types.ObjectId.isValid(countryID)) {
+            const objId = new mongoose.Types.ObjectId(countryID);
+            countryConditions.push({ 'countries.countryID': objId });
+            countryConditions.push({ 'countries._id': objId });
+        }
+
+        if (old_country_id) {
+            countryConditions.push({ 'countries.old_id': old_country_id });
+        }
+
+        if (country) {
+            countryConditions.push({
+                'countries.name': { $regex: new RegExp(`^${country}$`, 'i') }
+            });
+            countryConditions.push({
+                'countries.iso_name': { $regex: new RegExp(`^${country}$`, 'i') }
+            });
+        }
+
+        // ==========================================
+        // PRIORITY 1: CHECK STATE FIRST (MANDATORY)
+        // ==========================================
+        if (stateConditions.length > 0) {
+            territory = await Territories.findOne({
+                status: 'active',
+                $or: stateConditions
+            });
+
+            if (territory) {
+                matchType = 'state_match';
+            }
+        }
+
+        // ==================================================
+        // PRIORITY 2: IF STATE NOT FOUND → CHECK COUNTRY
+        // ==================================================
+        if (!territory && countryConditions.length > 0) {
+            territory = await Territories.findOne({
+                status: 'active',
+                $or: countryConditions
+            });
+
+            if (territory) {
+                matchType = 'country_match';
+            }
+        }
+
+        // =========================
+        // NO MATCH FOUND
+        // =========================
+        if (!territory) {
+            return {
+                success: false,
+                message: 'No territory found for the selected location',
+                searchParams: { countryID, stateID, old_country_id, old_state_id, country, state }
+            };
+        }
+
+        return {
+            success: true,
+            matchType,
+            data: {
+                _id: territory._id,
+                code: territory.code,
+                location: territory.location,
+                old_id: territory.old_id
+            }
+        };
+
+    } catch (error) {
+        console.error('Error finding territory:', error);
+        return {
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        };
+    }
+};
