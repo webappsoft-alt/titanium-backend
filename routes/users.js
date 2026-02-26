@@ -378,7 +378,7 @@ router.post('/signup/customer', async (req, res) => {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
-router.post('/check-routing', async (req, res) => {
+router.post('/check-routing', [auth, admin], async (req, res) => {
   try {
 
     const { stateID, countryID, old_state_id, old_country_id, country, state } = req.body;
