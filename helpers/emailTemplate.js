@@ -206,8 +206,8 @@ const generateEmailTemplate = (templateType, data) => {
                             <strong>Customer Name:</strong> ${data?.fname} ${data?.lname || ''}<br>
                             <strong>Email:</strong> ${data?.email}<br>
                             <strong>Phone:</strong> ${data?.billing?.phone || data?.shipping?.phone || data?.phone || 'N/A'}<br>
-                            <strong>Country:</strong> ${data?.country || data?.billing?.country || data?.shipping?.country || 'N/A'}<br>
-                            <strong>State:</strong> ${data?.state || data?.billing?.state || data?.shipping?.state || 'N/A'}
+                            <strong>Country:</strong> ${data?.country || data?.billing?.country || data?.shipping?.country || data?.user?.country || 'N/A'}<br>
+                            <strong>State:</strong> ${data?.state || data?.billing?.state || data?.shipping?.state || data?.user?.state || 'N/A'}
                         </p>
                         <br>
                 <a href="https://qqa.titanium.com/auth/login">Login to Admin</a>

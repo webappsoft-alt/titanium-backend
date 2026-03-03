@@ -852,13 +852,13 @@ exports.sendOpenQuotationEmail = [
             // ──────────────────────────────
             await sendGridEmail({
                 sendCode: false,
-                email: quotation?.email || quotationPromise?.user?.email,
+                email: quotation?.email || quotation?.user?.email,
                 type: 'open-quote',
                 data: quotation,
                 subject: `Open Quote - Titanium Industries`,
                 attachments: attachment,
             });
-            logger.info(`Open Quote Sent To: ${quotation?.email || quotationPromise?.user?.email}  ✅`)
+            logger.info(`Open Quote Sent To: ${quotation?.email || quotation?.user?.email}  ✅`)
             if (type == 'send-to-all') {
                 const userPromise = User.findById(quotation.user?._id)
                     .select('salesRep assignBranch accountManager regionalManager')
