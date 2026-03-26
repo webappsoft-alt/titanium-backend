@@ -11,7 +11,6 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 const s3Client = new S3Client({
   region: process.env.S3_REGION,
-  endpoint: process.env.S3_CONSOLE_URL,
   credentials: {
     accessKeyId: process.env.S3_APIKEY,
     secretAccessKey: process.env.S3_SECRET_KEY,
@@ -68,7 +67,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     await s3Client.send(putCommand);
 
     // Build public URL
-    const publicUrl = `${process.env.S3_CONSOLE_URL}/${process.env.S3_BUCKET_NAME}/${key}`;
+    const publicUrl = `${process.env.S3_PUBLIC_URL}/${key}`;
 
     res.json({ image: publicUrl });
 

@@ -7,3 +7,5 @@ App.js
 logfile.log
 uncaughtExceptions.log
 logs
+backup
+.claude
