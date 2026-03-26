@@ -6,21 +6,27 @@ const router = express.Router();
 const mime = require('mime-types');
 const fs = require('fs');
 
-const admin = require("firebase-admin");
-const bucket = admin.storage().bucket();
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+
+const s3Client = new S3Client({
+  region: process.env.S3_REGION,
+  credentials: {
+    accessKeyId: process.env.S3_APIKEY,
+    secretAccessKey: process.env.S3_SECRET_KEY,
+  },
+});
 
 // Setup multer storage configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "/files"); // Adjust the path as needed
+  destination: (_req, _file, cb) => {
+    const uploadPath = path.join(__dirname, "/files");
     cb(null, uploadPath);
   },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now(); // Get current timestamp
-    const extension = mime.extension(file.mimetype); // Get file extension
-    const originalName = file.originalname.replace(/\s+/g, '_'); // Replace spaces with underscores
-    const filename = `${timestamp}_${originalName}`; // Combine timestamp and original name
-    cb(null, filename); // Save the file with this name
+  filename: (_req, file, cb) => {
+    const timestamp = Date.now();
+    const originalName = file.originalname.replace(/\s+/g, '_');
+    const filename = `${timestamp}_${originalName}`;
+    cb(null, filename);
   },
 });
 
@@ -32,28 +38,28 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 
   try {
-    // Read the uploaded file
     const file = req.file;
-    const destination = `uploads/${file.filename}`;
+    const key = `uploads/${file.filename}`;
 
-    // Upload the file to Firebase Storage
-    await bucket.upload(file.path, {
-      destination,
-      metadata: {
-        contentType: mime.lookup(file.path),
-      }
+    const fileContent = fs.readFileSync(file.path);
+    const contentType = mime.lookup(file.path) || 'application/octet-stream';
+
+    // Upload to S3
+    const putCommand = new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: key,
+      Body: fileContent,
+      ContentType: contentType,
     });
 
-    // Make the file public
-    const fileInBucket = bucket.file(destination);
-    await fileInBucket.makePublic();
+    await s3Client.send(putCommand);
 
-    // Get public URL
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`;
+    // Build public URL
+    const publicUrl = `${process.env.S3_PUBLIC_URL}/${key}`;
 
     res.json({ doc: publicUrl });
 
-    // Delete the local file after upload
+    // Delete local file after upload
     fs.unlink(file.path, (err) => { if (err) console.error(err); });
   } catch (error) {
     console.error(error);
