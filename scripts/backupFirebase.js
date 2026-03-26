@@ -40,12 +40,14 @@ const downloadFile = (file, destPath) => {
   });
 };
 
+const FOLDER = 'audio';
+
 const run = async () => {
-  console.log('Fetching file list from Firebase Storage...');
-  const [files] = await bucket.getFiles();
+  console.log(`Fetching files from Firebase Storage folder: ${FOLDER}/...`);
+  const [files] = await bucket.getFiles({ prefix: `${FOLDER}/` });
 
   if (!files.length) {
-    console.log('No files found in bucket.');
+    console.log(`No files found in folder: ${FOLDER}/`);
     return;
   }
 

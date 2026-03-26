@@ -38,7 +38,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
   }
   try {
     const file = req.file;
-    const key = `uploads/${file.filename}`;
+    const key = file.filename;
 
     // Set path for compressed file
     const compressedFilePath = path.join(__dirname, 'files', `compressed-${file.filename}`);

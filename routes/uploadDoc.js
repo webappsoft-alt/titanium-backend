@@ -39,7 +39,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
   try {
     const file = req.file;
-    const key = `uploads/${file.filename}`;
+    const key = file.filename;
 
     const fileContent = fs.readFileSync(file.path);
     const contentType = mime.lookup(file.path) || 'application/octet-stream';
