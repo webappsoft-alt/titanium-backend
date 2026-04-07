@@ -58,6 +58,25 @@ const formatAttachments = (attachments = []) => {
 };
 
 /* ===============================
+   Resolve Attachment Filename by Type
+================================= */
+const resolveAttachmentFilename = (type, data, originalFilename = '') => {
+     const fname = data?.fname || data?.billing?.fname || '';
+     const lname = data?.lname || data?.billing?.lname || '';
+     const customerName = [fname, lname].filter(Boolean).join('-') || 'customer';
+     const timestamp = Date.now();
+     const ext = originalFilename.includes('.') ? originalFilename.slice(originalFilename.lastIndexOf('.')) : '.pdf';
+
+     if (type === 'new-open-quotation') {
+          return `quote-${customerName}-${timestamp}${ext}`;
+     }
+     if (type === 'new-quotation') {
+          return `sales-order-${customerName}-${timestamp}${ext}`;
+     }
+     return null;
+};
+
+/* ===============================
    Main Email Function
 ================================= */
 exports.sendGridEmail = async ({
@@ -75,7 +94,14 @@ exports.sendGridEmail = async ({
 
           logger.info(`🕶️ Preparing email | type: ${type} | email: ${email} | sendCode ${sendCode ? 'TRUE' : 'FALSE'}`);
 
-          const formattedAttachments = formatAttachments(attachments);
+          const renamedAttachments = attachments.map((att, i) => {
+               if (i === 0) {
+                    const newName = resolveAttachmentFilename(type, data, att.filename);
+                    if (newName) return { ...att, filename: newName };
+               }
+               return att;
+          });
+          const formattedAttachments = formatAttachments(renamedAttachments);
 
           let payload;
 
