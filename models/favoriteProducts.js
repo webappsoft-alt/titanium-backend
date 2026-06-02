@@ -35,6 +35,9 @@ const favoriteSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    secondaryTol: {
+        type: String,
+    },
     length: {
         type: String,
     },

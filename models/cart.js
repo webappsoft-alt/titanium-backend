@@ -22,6 +22,9 @@ const cartSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    secondaryTol: {
+        type: String,
+    },
     lengthTolerance: {
         type: String,
         trim: true

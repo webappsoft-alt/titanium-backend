@@ -106,6 +106,9 @@ const schema_ = new mongoose.Schema({
         primaryDimTol: {
             type: String,
         },
+        secondaryTol: {
+            type: String,
+        },
         cutLength: String,
         cutWidth: String,
         lengthTolerance: {

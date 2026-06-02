@@ -27,7 +27,7 @@ exports.createCart = async (req, res) => {
             productForm, identifier,
             grade,
             primaryDimension, cutLength, cutWidth,
-            primaryDimTol,
+            primaryDimTol, secondaryTol,
             lengthTolerance, customCut,
             length,
             quantity,
@@ -48,7 +48,7 @@ exports.createCart = async (req, res) => {
             productForm, identifier,
             grade, cutWidth,
             primaryDimension, cutLength,
-            primaryDimTol,
+            primaryDimTol, secondaryTol,
             lengthTolerance, customCut,
             length,
             quantity,
@@ -61,7 +61,7 @@ exports.createCart = async (req, res) => {
             type
         }, { upsert: true, new: true })
 
-        const latestCart = await Cart.find({ user: userId }).select('uniqueID productForm identifier grade primaryDimension primaryDimTol cutLength cutWidth lengthTolerance customCut length quantity prices pricesId specifications uom alloyFamily').lean()
+        const latestCart = await Cart.find({ user: userId }).select('uniqueID productForm identifier grade primaryDimension primaryDimTol secondaryTol cutLength cutWidth lengthTolerance customCut length quantity prices pricesId specifications uom alloyFamily').lean()
         await createQuot(userId, { quote: latestCart }, 'open-quote')
         sendEncryptedResponse(res, { success: true, cart });
     } catch (error) {
