@@ -104,13 +104,13 @@ exports.create = async (req, res) => {
             }
         })) : [];
         const discountedData = discountedProd?.length > 0 ? discountedProd.map(({ uniqueID, identifier, available_quantity, primaryDimension, specifications, gradeAlloy, productForm, alloyFamily,
-            uom, length, lengthTolerance, diameter, primaryDimTol, density, lbFTTol, lbFTwithoutTol, type, }) => ({
+            uom, length, lengthTolerance, diameter, primaryDimTol, secondaryTol, density, lbFTTol, lbFTwithoutTol, type, }) => ({
                 updateOne: {
                     filter: { uniqueID },
                     update: {
                         $set: {
                             identifier, available_quantity, primaryDimension, specifications, gradeAlloy, productForm, alloyFamily,
-                            uniqueID, uom, length, lengthTolerance, diameter, primaryDimTol, density, lbFTTol, lbFTwithoutTol, type
+                            uniqueID, uom, length, lengthTolerance, diameter, primaryDimTol, secondaryTol, density, lbFTTol, lbFTwithoutTol, type
                         }
                     },
                     upsert: true

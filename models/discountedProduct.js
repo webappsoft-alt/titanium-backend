@@ -27,6 +27,7 @@ const schema_ = new mongoose.Schema({
     lengthTolerance: Number,
     diameter: Number,
     primaryDimTol: Number,
+    secondaryTol: Number,
     density: Number,
     lbFTTol: Number,
     lbFTwithoutTol: Number,
