@@ -705,13 +705,30 @@ exports.getQuotationById = async (req, res) => {
                 select: '-password',
                 populate: [
                     { path: 'billingAddress' },
-                    { path: 'shippingAddress' }
+                    { path: 'shippingAddress' },
+                    { path: 'accountManager', select: 'email fname lname' },
+                    { path: 'salesRep', select: 'email fname lname' },
+                    { path: 'regionalManager', select: 'email fname lname' },
                 ]
             });
         if (!quotation) {
             return res.status(404).json({ success: false, message: "Quotation not found" });
         }
         sendEncryptedResponse(res, { success: true, data: quotation });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+exports.getQuotationSalesperson = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id)
+            .populate('accountManager', 'email fname lname')
+            .populate('salesRep', 'email fname lname')
+            .populate('regionalManager', 'email fname lname').select('accountManager salesRep regionalManager').lean()
+        if (!user) {
+            return res.status(404).json({ success: false, message: "user not found" });
+        }
+        sendEncryptedResponse(res, { success: true, data: user });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -779,7 +796,16 @@ exports.updateStatus = async (req, res) => {
             query.isSalesOrder = false
             query.closedReason = closedReason
         }
-        const updatedQuotation = await Quotation.findByIdAndUpdate(req.params.id, query, { new: true }).populate('user', '_id isCompetitor discount assignBranch').lean();
+        const updatedQuotation = await Quotation.findByIdAndUpdate(req.params.id, query, { new: true })
+            .populate({
+                path: 'user',
+                select: '_id isCompetitor discount assignBranch accountManager salesRep regionalManager',
+                populate: [
+                    { path: 'accountManager', select: 'email' },
+                    { path: 'salesRep', select: 'email' },
+                    { path: 'regionalManager', select: 'email' }
+                ]
+            }).lean();
         if (!updatedQuotation) {
             return res.status(404).json({ success: false, message: "Quotation not found" });
         }

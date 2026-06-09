@@ -8,6 +8,7 @@ router.post('/create', auth, controller.createQuotation);
 router.get('/user/:id?', auth, controller.getCustomerQuotations);
 
 router.get('/admin/:id', [auth, admin], controller.getAllQuotations);
+router.get('/admin/sales/:id', auth, controller.getQuotationSalesperson);
 router.get('/byId/:id', auth, controller.getQuotationById);
 
 router.get('/byUserId/:id', [auth, admin], controller.getQuotationByUserId);

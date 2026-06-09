@@ -50,10 +50,14 @@ router.get('/me', auth, async (req, res) => {
   const user = await User.findById(req.user._id).select('-password')
     .populate('shippingAddress')
     .populate('billingAddress')
+    .populate('accountManager', 'email fname lname')
+    .populate('salesRep', 'email fname lname')
+    .populate('regionalManager', 'email fname lname')
     .lean()
   const competData = await CompetitorMarkup.findOne().sort({ _id: -1 }).select('minValue maxValue').lean()
   const token = generateAuthToken(user?._id, user?.type, user?.permissions || '', user?.email);
-  sendEncryptedResponse(res, { success: !!user, user: user, token, data: competData });
+  const isCompetitor = user?.isCompetitor || await isCompetitorEmail(user.email);
+  sendEncryptedResponse(res, { success: !!user, user: { ...user, isCompetitor }, token, data: competData });
   const stateManagment = userPath.find(item => page?.startsWith(item.label)) || null;
   if (stateManagment?.value) {
     const updateduser = await User.findOneAndUpdate({ _id: req.user._id, currentWebState: { $ne: stateManagment?.value } }, { currentWebState: stateManagment?.value, oldWebState: user?.currentWebState || '', stateChangeDate: Date.now() }, { new: true })
@@ -76,7 +80,8 @@ router.get('/byId/:id', [auth, admin], async (req, res) => {
       .populate('shippingAddress')
       .populate('billingAddress')
       .select('-password').lean()
-    sendEncryptedResponse(res, { success: !!user, user: user });
+    const isCompetitor = user?.isCompetitor || await isCompetitorEmail(user.email);
+    sendEncryptedResponse(res, { success: !!user, user: { ...user, isCompetitor } });
   } catch (error) {
     console.log(error)
     res.status(500).json({ error: 'Internal server error' });
